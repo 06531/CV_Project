@@ -9,15 +9,57 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="scene.css">
 <style>
-  /* The AI multi-agent workflow: one prompt fans out to a whole team.
+  /* Beat one of the AI workflow: one prompt picks a role out of a nine-strong
+     bench, and a difficulty grade picks the model that runs it.
      Shared shell lives in scene.css; only this scene's own layout is here. */
-  .flow { position: relative; margin-top: clamp(18px, 2.4vmin, 30px); }
-  #wires path { opacity: .55; }
-  .row.pair { gap: clamp(16px, 3vmin, 44px); margin-top: clamp(52px, 7vmin, 92px); }
+
+  /* The team. All nine are on the bench; one gets picked. */
+  .roster { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; margin-top: clamp(14px, 2vmin, 24px); }
+  .role {
+    font-family: var(--mono);
+    font-size: clamp(9.5px, 1.02vmin, 12px);
+    line-height: 1;
+    padding: 6px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .role.is-picked { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+
+  .flow { position: relative; margin-top: clamp(24px, 3.4vmin, 44px); }
+  #wires path { opacity: .5; }
+
+  /* Difficulty decides the model — the same role runs on a different brain. */
+  .routes { position: relative; margin-top: 10px; display: grid; gap: 3px; }
+  .route {
+    position: relative; z-index: 1;
+    display: grid; grid-template-columns: 4.6em 1.2em auto; align-items: center; gap: 8px;
+    padding: 5px 9px;
+    font-family: var(--mono);
+    font-size: clamp(10px, 1.1vmin, 13px);
+    line-height: 1.15;
+    color: var(--muted);
+  }
+  .route .mdl { color: var(--ink); font-weight: 600; }
+  .route .arrow { color: var(--line); }
+  .route.is-picked .lvl, .route.is-picked .arrow { color: var(--accent); }
+  .route.is-picked .mdl { color: var(--accent); font-weight: 700; }
+  .pick {
+    position: absolute; left: 0; right: 0; z-index: 0;
+    border-radius: 7px;
+    background: var(--accent-soft);
+  }
+
+  .card.is-lead { min-width: clamp(220px, 30vmin, 340px); }
 
   @media (max-aspect-ratio: 3/4) {
-    .flow { margin-top: 10px; }
-    .row.pair { flex-direction: column; align-items: stretch; gap: 6px; margin-top: 16px; }
+    .roster { gap: 4px; margin-top: 12px; }
+    .role { font-size: 10.5px; padding: 5px 7px; }
+    .flow { margin-top: 16px; }
+    .routes { margin-top: 8px; }
+    .route { font-size: 11.5px; padding: 4px 8px; }
   }
 </style>
 </head>
@@ -32,8 +74,10 @@
       <div class="body">
         <div class="prompt"><span class="sigil">$</span> <span id="typed"></span><span class="caret" id="caret"></span></div>
 
+        <div class="roster" id="roster"></div>
+
         <div class="flow" id="flow">
-          <svg id="wires" class="wires" preserveAspectRatio="none"><path id="wireL"></path><path id="wireR"></path></svg>
+          <svg id="wires" class="wires" preserveAspectRatio="none"><path id="wirePick"></path></svg>
 
           <div class="row">
             <div class="card is-lead" id="cardDispatch">
@@ -43,34 +87,12 @@
                 <span class="card__name">dispatcher</span>
               </div>
               <div class="card__meta" id="dispatchMeta"></div>
-            </div>
-          </div>
-
-          <div class="row pair">
-            <div class="card" id="cardDev">
-              <div class="card__head">
-                <!-- lucide: code -->
-                <svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-                <span class="card__name">developer</span>
+              <div class="routes" id="routes">
+                <div class="pick" id="pick"></div>
               </div>
-              <div class="card__meta"><span class="chip is-model">model: sonnet</span><span class="chip">implement</span></div>
-            </div>
-            <div class="card" id="cardTest">
-              <div class="card__head">
-                <!-- lucide: check-check -->
-                <svg viewBox="0 0 24 24"><path d="m18 6-8.5 8.5L5 10"/><path d="m22 10-7.5 7.5L13 16"/></svg>
-                <span class="card__name">tester</span>
-              </div>
-              <div class="card__meta"><span class="chip is-model">model: sonnet</span><span class="chip">verify</span></div>
             </div>
           </div>
         </div>
-
-        <ul class="log" id="log">
-          <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><b>4 files</b> changed &nbsp;·&nbsp; data + messages (en / zh-HK)</span></li>
-          <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><b>typecheck</b> passed &nbsp;·&nbsp; 0 errors</span></li>
-          <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><b>next build</b> &nbsp;·&nbsp; 17 routes prerendered</span></li>
-        </ul>
       </div>
     </div>
   </div>
@@ -85,34 +107,60 @@
 
   const $ = (id) => document.getElementById(id);
   const board = $('board'), typed = $('typed'), caret = $('caret');
-  const dispatchMeta = $('dispatchMeta');
-  const cards = { dispatch: $('cardDispatch'), dev: $('cardDev'), test: $('cardTest') };
-  const wires = { L: $('wireL'), R: $('wireR') };
-  const logItems = Array.from($('log').children);
+  const cardDispatch = $('cardDispatch'), wirePick = $('wirePick');
 
-  const META = [
-    { label: 'role: developer', model: false },
-    { label: 'difficulty: medium', model: false },
-    { label: 'model: sonnet', model: true },
+  // ---- The bench. Order matches .claude/agents/.
+  const ROSTER = ['dispatcher', 'architect', 'developer', 'ui-ux', 'tester', 'qa', 'security', 'devops', 'docs'];
+  const PICKED = 'developer';
+  const rosterEl = $('roster');
+  rosterEl.innerHTML = ROSTER.map((r) => `<span class="role" data-role="${r}">${r}</span>`).join('');
+  const roleChips = Array.from(rosterEl.children);
+  const pickedChip = roleChips[ROSTER.indexOf(PICKED)];
+
+  // ---- What the dispatcher decides.
+  const META = ['role: developer', 'difficulty: medium'];
+  $('dispatchMeta').innerHTML = META.map((label) => `<span class="chip">${label}</span>`).join('');
+  const metaChips = Array.from($('dispatchMeta').children);
+
+  // ---- Difficulty → model. The row that matches lights up.
+  const ROUTES = [
+    ['easy', 'haiku'],
+    ['medium', 'sonnet'],
+    ['hard', 'opus'],
   ];
-  dispatchMeta.innerHTML = META
-    .map((m) => `<span class="chip${m.model ? ' is-model' : ''}">${m.label}</span>`)
-    .join('');
-  const metaChips = Array.from(dispatchMeta.children);
+  const PICKED_ROW = 1;
+  const routesEl = $('routes'), pick = $('pick');
+  routesEl.insertAdjacentHTML(
+    'beforeend',
+    ROUTES.map(([lvl, mdl]) =>
+      `<div class="route"><span class="lvl">${lvl}</span><span class="arrow">&rarr;</span><span class="mdl">${mdl}</span></div>`,
+    ).join(''),
+  );
+  const routeRows = Array.from(routesEl.querySelectorAll('.route'));
 
-  /** Redraw the connector paths — the flow box is fluid, so measure each frame.
-      Uses offset* (layout units, relative to the positioned .flow) rather than
-      getBoundingClientRect, because the board carries a scale transform and the
+  /** Wire from the chosen role chip down into the dispatcher. Measured every
+      frame in layout units, because the board carries a scale transform and the
       SVG's user units are pre-transform. */
-  function wirePaths() {
-    const x0 = cards.dispatch.offsetLeft + cards.dispatch.offsetWidth / 2;
-    const y0 = cards.dispatch.offsetTop + cards.dispatch.offsetHeight;
-    for (const [key, el] of [['L', cards.dev], ['R', cards.test]]) {
-      const x1 = el.offsetLeft + el.offsetWidth / 2;
-      const y1 = el.offsetTop;
-      const mid = y0 + (y1 - y0) * 0.55;
-      wires[key].setAttribute('d', `M ${x0} ${y0} C ${x0} ${mid}, ${x1} ${mid}, ${x1} ${y1}`);
-    }
+  function wirePath() {
+    const flow = document.getElementById('flow');
+    // The chip lives outside .flow, so bring its position into .flow's space.
+    const x0 = pickedChip.offsetLeft + pickedChip.offsetWidth / 2 - flow.offsetLeft;
+    const y0 = pickedChip.offsetTop + pickedChip.offsetHeight - flow.offsetTop;
+    const x1 = cardDispatch.offsetLeft + cardDispatch.offsetWidth / 2;
+    const y1 = cardDispatch.offsetTop;
+    const mid = y0 + (y1 - y0) * 0.55;
+    wirePick.setAttribute('d', `M ${x0} ${y0} C ${x0} ${mid}, ${x1} ${mid}, ${x1} ${y1}`);
+  }
+
+  /** Park the highlight over one routing row. Measured, because the rows are
+      sized in vmin and the board is scaled. */
+  function placePick(rowIndex, grown) {
+    const row = routeRows[rowIndex];
+    if (!row) return;
+    pick.style.top = row.offsetTop + 'px';
+    pick.style.height = row.offsetHeight + 'px';
+    pick.style.opacity = grown;
+    pick.style.transform = `scaleX(${(0.86 + grown * 0.14).toFixed(4)})`;
   }
 
   function reveal(el, t, lift) {
@@ -125,40 +173,48 @@
   window.__setFrame = function (i, total) {
     last = { i, total };
     const p = total > 1 ? clamp(i / (total - 1), 0, 1) : 0;
-    wirePaths();
+    wirePath();
 
-    // 0.00–0.20 — the command types itself out.
-    const typeT = seg(p, 0.02, 0.20);
+    // 0.00–0.18 — the command types itself out.
+    const typeT = seg(p, 0.02, 0.18);
     const chars = Math.round(typeT * COMMAND.length);
     typed.textContent = COMMAND.slice(0, chars);
     // Deterministic blink: on/off by frame band rather than by wall clock.
-    caret.style.opacity = p > 0.24 ? 0 : (Math.floor(p * 40) % 2 ? 0.25 : 1);
+    caret.style.opacity = p > 0.21 ? 0 : (Math.floor(p * 44) % 2 ? 0.25 : 1);
 
-    // 0.16–0.34 — dispatcher lands, then its verdict chips resolve one by one.
-    reveal(cards.dispatch, seg(p, 0.16, 0.30));
+    // 0.18–0.42 — the whole bench turns up, one after another.
+    roleChips.forEach((chip, k) => {
+      const t = seg(p, 0.18 + k * 0.018, 0.30 + k * 0.018);
+      chip.style.opacity = t;
+      chip.style.transform = `translateY(${(1 - t) * 8}px)`;
+      // …and then one of them is the answer.
+      chip.classList.toggle('is-picked', p > 0.46 && chip.dataset.role === PICKED);
+    });
+
+    // 0.48–0.60 — a wire drops from the chosen role into the dispatcher.
+    const wireT = seg(p, 0.48, 0.60);
+    const len = wirePick.getTotalLength();
+    wirePick.style.strokeDasharray = len;
+    wirePick.style.strokeDashoffset = len * (1 - wireT);
+
+    // 0.54–0.68 — the dispatcher lands and states its verdict.
+    reveal(cardDispatch, seg(p, 0.54, 0.66));
     metaChips.forEach((chip, k) => {
-      const t = seg(p, 0.26 + k * 0.035, 0.34 + k * 0.035);
+      const t = seg(p, 0.62 + k * 0.04, 0.70 + k * 0.04);
       chip.style.opacity = t;
       chip.style.transform = `scale(${0.9 + t * 0.1})`;
     });
 
-    // 0.36–0.56 — wires draw down, then the two workers appear.
-    const wireT = seg(p, 0.36, 0.52);
-    for (const key of ['L', 'R']) {
-      const el = wires[key];
-      const len = el.getTotalLength();
-      el.style.strokeDasharray = len;
-      el.style.strokeDashoffset = len * (1 - wireT);
-    }
-    reveal(cards.dev, seg(p, 0.44, 0.58));
-    reveal(cards.test, seg(p, 0.49, 0.63));
+    // 0.72–0.94 — the routing table fills in, then the matching row lights up.
+    routeRows.forEach((row, k) => {
+      const t = seg(p, 0.72 + k * 0.04, 0.80 + k * 0.04);
+      row.style.opacity = t;
+      row.classList.toggle('is-picked', p > 0.90 && k === PICKED_ROW);
+    });
+    placePick(PICKED_ROW, seg(p, 0.86, 0.94));
 
-    // 0.62–0.90 — verification log prints line by line.
-    logItems.forEach((li, k) => reveal(li, seg(p, 0.62 + k * 0.07, 0.76 + k * 0.07), 8));
-
-    // Continuous slow push-in so no stretch of the clip is a frozen frame,
-    // easing off at the end where the copy layer's CTA takes over.
-    const settle = seg(p, 0.86, 1);
+    // Continuous slow push-in so no stretch of the clip is a frozen frame.
+    const settle = seg(p, 0.90, 1);
     const scale = 1 + p * 0.05 - settle * 0.012;
     board.style.transform = `translateY(${(0.5 - p) * 26}px) scale(${scale.toFixed(4)})`;
 

@@ -11,8 +11,9 @@
 
 /** @type {SceneSpec[]} */
 export const SCENES = [
-  // /portfolio's opener — how the work gets made.
-  { id: 'agents', kind: 'explainer', frames: 140 },
+  // /portfolio's opener — how the work gets made, in two beats.
+  { id: 'agents', kind: 'explainer', frames: 160 },
+  { id: 'agents-handoff', kind: 'explainer', frames: 160 },
 
   // Multi-tenant course scheduling platform.
   { id: 'schedule-tour', kind: 'app', app: 'schedule', frames: 140 },

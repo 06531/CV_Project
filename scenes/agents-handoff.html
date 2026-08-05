@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>agents-handoff — scroll-world explainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="scene.css">
+<style>
+  /* Beat two: the routed work is implemented, handed off, and has to survive
+     the project's own rules before it counts as done.
+     Shared shell lives in scene.css; only this scene's own layout is here. */
+  .flow { position: relative; margin-top: clamp(10px, 1.6vmin, 20px); }
+  .row.pair { gap: clamp(40px, 6vmin, 88px); }
+  #handoff { stroke-dasharray: 5 5; opacity: 0; }
+
+  /* The travelling token: the branch moving from one agent to the next. */
+  #token { fill: var(--accent); opacity: 0; }
+
+  .log { margin-top: clamp(22px, 3vmin, 38px); }
+  .log li + li { margin-top: 2px; }
+  .log svg.pending { stroke: var(--line); }
+  .detail { font-style: normal; }
+
+  .verdict {
+    margin-top: clamp(16px, 2.2vmin, 28px);
+    display: flex; justify-content: center;
+  }
+  .stamp {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--ok) 45%, transparent);
+    background: color-mix(in srgb, var(--ok) 12%, transparent);
+    color: var(--ok);
+    font-family: var(--mono); font-weight: 700;
+    font-size: clamp(11px, 1.15vmin, 14px);
+  }
+  .stamp svg { width: 15px; height: 15px; stroke: var(--ok); fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+
+  @media (max-aspect-ratio: 3/4) {
+    .flow { margin-top: 10px; }
+    .row.pair { gap: 10px; }
+    .verdict { margin-top: 14px; }
+    /* This scene is short enough to keep its checklist on a phone — the shell
+       hides `.log` by default because most scenes are not. */
+    .log { display: block; margin-top: 16px; font-size: 11.5px; line-height: 1.7; }
+    .detail { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="board">
+    <div class="window">
+      <div class="titlebar">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="name">claude code — CV_project</span>
+      </div>
+      <div class="body">
+        <div class="prompt"><span class="sigil">$</span> <span id="typed"></span><span class="caret" id="caret"></span></div>
+
+        <div class="flow" id="flow">
+          <svg id="wires" class="wires" preserveAspectRatio="none">
+            <path id="handoff"></path>
+            <circle id="token" r="4.5" cx="-99" cy="-99"></circle>
+          </svg>
+
+          <div class="row pair">
+            <div class="card" id="cardDev">
+              <div class="card__head">
+                <!-- lucide: code -->
+                <svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                <span class="card__name">developer</span>
+              </div>
+              <div class="card__meta"><span class="chip is-model">sonnet</span><span class="chip">implement</span></div>
+            </div>
+            <div class="card" id="cardTest">
+              <div class="card__head">
+                <!-- lucide: check-check -->
+                <svg viewBox="0 0 24 24"><path d="m18 6-8.5 8.5L5 10"/><path d="m22 10-7.5 7.5L13 16"/></svg>
+                <span class="card__name">tester</span>
+              </div>
+              <div class="card__meta"><span class="chip is-model">sonnet</span><span class="chip">verify</span></div>
+            </div>
+          </div>
+        </div>
+
+        <ul class="log" id="log">
+          <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><b>en.json</b> + <b>zh-HK.json</b><i class="detail"> &nbsp;·&nbsp; both, or a language switch shows raw keys</i></span></li>
+          <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><b>typecheck</b> &nbsp;·&nbsp; 0 errors</span></li>
+          <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><b>next build</b> &nbsp;·&nbsp; 21 routes<i class="detail"> prerendered</i></span></li>
+        </ul>
+
+        <div class="verdict">
+          <span class="stamp" id="stamp">
+            <svg viewBox="0 0 24 24"><path d="m18 6-8.5 8.5L5 10"/><path d="m22 10-7.5 7.5L13 16"/></svg>
+            ready to commit
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const COMMAND = 'developer → tester';
+  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+  const seg = (p, from, to) => { const x = clamp((p - from) / (to - from), 0, 1); return x * x * (3 - 2 * x); };
+
+  const $ = (id) => document.getElementById(id);
+  const board = $('board'), typed = $('typed'), caret = $('caret');
+  const cardDev = $('cardDev'), cardTest = $('cardTest');
+  const handoff = $('handoff'), token = $('token'), stamp = $('stamp');
+  const logItems = Array.from($('log').children);
+  const logTicks = logItems.map((li) => li.querySelector('svg'));
+
+  /** developer → tester. Side by side in landscape, stacked in portrait, so
+      pick the axis from the laid-out geometry rather than a media query. */
+  function wirePath() {
+    const ay = cardDev.offsetTop + cardDev.offsetHeight / 2;
+    const by = cardTest.offsetTop + cardTest.offsetHeight / 2;
+    if (Math.abs(by - ay) > 8) {
+      const x = cardDev.offsetLeft + cardDev.offsetWidth / 2;
+      handoff.setAttribute('d', `M ${x} ${cardDev.offsetTop + cardDev.offsetHeight} L ${x} ${cardTest.offsetTop}`);
+    } else {
+      handoff.setAttribute(
+        'd',
+        `M ${cardDev.offsetLeft + cardDev.offsetWidth} ${ay} L ${cardTest.offsetLeft} ${by}`,
+      );
+    }
+  }
+
+  function reveal(el, t, lift) {
+    el.style.opacity = t;
+    el.style.transform = `translateY(${(1 - t) * (lift == null ? 14 : lift)}px)`;
+  }
+
+  let last = { i: 0, total: 2 };
+
+  window.__setFrame = function (i, total) {
+    last = { i, total };
+    const p = total > 1 ? clamp(i / (total - 1), 0, 1) : 0;
+    wirePath();
+
+    // 0.00–0.08 — the caption types itself out. Kept short: this scene opens
+    // straight after another one's finished frame, and a board that is still
+    // empty a third of the way in reads as a dead cut.
+    const chars = Math.round(seg(p, 0.01, 0.08) * COMMAND.length);
+    typed.textContent = COMMAND.slice(0, chars);
+    caret.style.opacity = p > 0.11 ? 0 : (Math.floor(p * 44) % 2 ? 0.25 : 1);
+
+    // 0.03–0.17 — the two workers arrive.
+    reveal(cardDev, seg(p, 0.03, 0.13));
+    reveal(cardTest, seg(p, 0.07, 0.17));
+
+    // 0.18–0.36 — the branch is handed across.
+    const drawn = seg(p, 0.20, 0.36);
+    handoff.style.opacity = seg(p, 0.18, 0.26) * 0.5;
+    const len = handoff.getTotalLength();
+    if (len > 0) {
+      const pt = handoff.getPointAtLength(len * drawn);
+      token.setAttribute('cx', pt.x);
+      token.setAttribute('cy', pt.y);
+      token.style.opacity = p > 0.19 && p < 0.42 ? 1 : 0;
+    }
+    cardDev.classList.toggle('is-lead', p >= 0.05 && p < 0.32);
+    cardTest.classList.toggle('is-lead', p >= 0.32);
+
+    // 0.38–0.86 — the tester's checklist resolves, one line at a time.
+    logItems.forEach((li, k) => {
+      const appear = seg(p, 0.38 + k * 0.09, 0.52 + k * 0.09);
+      reveal(li, appear, 8);
+      // The tick only turns green once that check has actually passed.
+      logTicks[k].classList.toggle('pending', p < 0.58 + k * 0.09);
+    });
+
+    // 0.86–0.98 — and only then is it done.
+    const done = seg(p, 0.86, 0.97);
+    stamp.style.opacity = done;
+    stamp.style.transform = `scale(${(0.9 + done * 0.1).toFixed(4)})`;
+
+    // Continuous slow push-in so no stretch of the clip is a frozen frame.
+    const settle = seg(p, 0.92, 1);
+    const scale = 1 + p * 0.045 - settle * 0.012;
+    board.style.transform = `translateY(${(0.5 - p) * 24}px) scale(${scale.toFixed(4)})`;
+
+    document.documentElement.dataset.frame = String(i);
+  };
+
+  window.__setFrame(0, 2);
+  window.addEventListener('resize', () => window.__setFrame(last.i, last.total));
+})();
+</script>
+</body>
+</html>

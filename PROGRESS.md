@@ -23,6 +23,10 @@
   `WorldStage` 管「一 session 播一次 + 重播」(取代舊 `PortfolioIntro`)
 - **重心放喺解說段**:schedule 現時三幕 = 1 短真 UI(`schedule-tour`)+ 2 解說
   (`schedule-tenancy` 多租戶 / QR,`schedule-booking` 報名→名額→老師課表→Stripe)
+- **`/portfolio` 開場由一幕變兩幕**(合共 4.0vh,舊版 1.8vh,慢咗一倍以上):
+  `agents` = 九個角色排開 → dispatcher 揀角色 → 難度→model 對照表亮起選中嗰行;
+  `agents-handoff` = developer 交棒 tester(有粒 token 行過去)→ 三項檢查逐項變綠 → 「ready to commit」
+- **WorldStage 個「重播」掣改置中** —— 收埋動畫之後淨返佢一個,貼住左邊好似排版出錯
 - **修好尾段**:以前場景鋪滿成條 track,但 sticky 舞台只行得 `track − stage` 咁高,
   所以最後一幕仲係 100% 不透明就已經被刮走(= 之前見到嘅「半截白板」)。
   而家 `layout()` 用舞台自己嘅高度做 vh,場景只佔 `travel − outro`,再加 0.6vh outro band 整體淡出

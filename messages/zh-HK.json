@@ -167,7 +167,12 @@
         "agents": {
           "eyebrow": "AI 輔助開發",
           "title": "一句說話,一隊人開工",
-          "body": "Dispatcher 讀完需求,判斷角色同難度,再分派畀對應的 model —— developer 同 tester 接力,typecheck 同 build 過咗先算數。"
+          "body": "Dispatcher 讀完需求,喺九個角色入面揀一個,再評個難度 —— 難度決定用邊個 model。改個名用最細嗰個;架構同安全分析用最大嗰個。"
+        },
+        "agents-handoff": {
+          "eyebrow": "冇嘢可以繞過檢查",
+          "title": "之後仲要過到關",
+          "body": "Developer 交畀 tester。兩個語言檔要一齊改,唔係切語言就見到 raw key;typecheck 同 build 過咗,先當件事做完。"
         }
       }
     },

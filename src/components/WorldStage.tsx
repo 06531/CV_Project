@@ -34,21 +34,25 @@ export default function WorldStage({ scenes, seenKey }: Props) {
   if (!scenes?.length) return null;
   if (show) return <ScrollWorld scenes={scenes} seenKey={seenKey} />;
 
+  // Centred: once the film has collapsed there is nothing else on this row, and
+  // a lone control hard against the left edge reads as a layout mistake.
   return (
-    <button
-      type="button"
-      onClick={() => {
-        try {
-          sessionStorage.removeItem(seenKey);
-        } catch {
-          /* ignore */
-        }
-        setShow(true);
-      }}
-      className="tap-target mb-2 inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 font-mono text-xs text-muted transition-colors hover:border-accent hover:text-accent"
-    >
-      <Play className="size-3.5" aria-hidden />
-      {t('replay')}
-    </button>
+    <div className="mb-4 flex justify-center">
+      <button
+        type="button"
+        onClick={() => {
+          try {
+            sessionStorage.removeItem(seenKey);
+          } catch {
+            /* ignore */
+          }
+          setShow(true);
+        }}
+        className="tap-target inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 font-mono text-xs text-muted transition-colors hover:border-accent hover:text-accent"
+      >
+        <Play className="size-3.5" aria-hidden />
+        {t('replay')}
+      </button>
+    </div>
   );
 }

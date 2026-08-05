@@ -42,7 +42,8 @@ const scene = (id: string, kind: WorldScene['kind'], rest: Omit<WorldScene, 'id'
 
 /** The deck that opens `/portfolio` — how the work gets made, not what it is. */
 export const INTRO_WORLD: WorldScene[] = [
-  scene('agents', 'explainer', { scroll: 1.8, linger: 0.4 }),
+  scene('agents', 'explainer', { scroll: 2.1, linger: 0.35 }),
+  scene('agents-handoff', 'explainer', { scroll: 1.9, linger: 0.35 }),
 ];
 
 /** One deck per project, played at the top of its case study. */
