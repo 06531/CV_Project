@@ -27,6 +27,16 @@
   `agents` = 九個角色排開 → dispatcher 揀角色 → 難度→model 對照表亮起選中嗰行;
   `agents-handoff` = developer 交棒 tester(有粒 token 行過去)→ 三項檢查逐項變綠 → 「ready to commit」
 - **WorldStage 個「重播」掣改置中** —— 收埋動畫之後淨返佢一個,貼住左邊好似排版出錯
+- **`/portfolio` 開場改成自動播**(`AutoWorld`,`WorldStage mode="auto"`):
+  一個螢幕高、自己由頭播到尾、頂部有進度條、播完停喺最後一格並保留文字。
+  Project 詳情頁維持 scroll 拖動(`ScrollWorld`)。
+  注意個 section 要用 `h-[calc(100svh-4rem)]` —— 純 `h-svh` 由 header 底計起,
+  會超出視窗 4rem,文字尾幾行被切走
+- **手機 footer 唔再被底部行動列蓋住** —— `SiteFooter` 改 client component,
+  只喺 CV 頁(有 `MobileActionBar` 嗰版)預留 `5.5rem + safe-area` 底部空間
+- **導覽錨點唔再彈返頂** —— `href` 由 `/#skills` 改成 `#skills`。
+  前者係另一個 URL,瀏覽器會導航、落返頂,先再滑落去
+- **`localeDetection: false`** —— 一律先入英文,唔再跟瀏覽器 Accept-Language
 - **修好尾段**:以前場景鋪滿成條 track,但 sticky 舞台只行得 `track − stage` 咁高,
   所以最後一幕仲係 100% 不透明就已經被刮走(= 之前見到嘅「半截白板」)。
   而家 `layout()` 用舞台自己嘅高度做 vh,場景只佔 `travel − outro`,再加 0.6vh outro band 整體淡出

@@ -47,7 +47,10 @@ export default function SiteHeader() {
     return () => observer.disconnect();
   }, [onCv]);
 
-  const sectionLinks = SECTIONS.map((id) => ({ id, href: `/#${id}`, label: t(id) }));
+  // A bare fragment, not `/#id`: the latter is a different URL from `/en`, so
+  // the browser navigates, lands at the top, and only then scrolls down —
+  // which reads as a flash followed by a scroll from the wrong place.
+  const sectionLinks = SECTIONS.map((id) => ({ id, href: `#${id}`, label: t(id) }));
 
   return (
     <header className="no-print sticky top-0 z-40 border-b border-line bg-bg/85 backdrop-blur-md">

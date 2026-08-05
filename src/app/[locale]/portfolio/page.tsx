@@ -30,7 +30,7 @@ export default async function PortfolioPage({ params }: PageProps<'/[locale]/por
         {t('world.skip')}
       </a>
 
-      <WorldStage scenes={INTRO_WORLD} seenKey="cv-world-intro" />
+      <WorldStage scenes={INTRO_WORLD} seenKey="cv-world-intro" mode="auto" skipTo="#projects" />
 
       <div id="projects" className="mx-auto max-w-6xl scroll-mt-20 px-4 sm:px-6">
         <Link
