@@ -19,7 +19,7 @@ import { existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
-import { APPS, DEFAULT_FRAMES, SCENES, VIEWPORTS } from '../scenes/manifest.mjs';
+import { APPS, DEFAULT_FRAMES, REMOTES, SCENES, VIEWPORTS } from '../scenes/manifest.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FRAMES = path.join(root, '.frames');
@@ -196,6 +196,114 @@ async function captureApp(browser, scene, base) {
   }
 }
 
+// ----------------------------------------------------------- remote scenes
+
+/**
+ * Films a system we cannot boot: attach to a Chrome the reader has already
+ * signed in, open a tab in that same context so it shares the session, rewrite
+ * the identifying names in place, and pan down it.
+ *
+ * Deliberately never touches a password. See REMOTES in scenes/manifest.mjs
+ * for how to start that Chrome.
+ */
+async function captureRemote(scene) {
+  const remote = REMOTES[scene.remote];
+  if (!remote) throw new Error(`unknown remote "${scene.remote}" in scenes/manifest.mjs`);
+  const frames = scene.frames ?? DEFAULT_FRAMES;
+
+  let browser;
+  try {
+    browser = await chromium.connectOverCDP(remote.cdp);
+  } catch {
+    throw new Error(
+      `no debuggable Chrome on ${remote.cdp}. Start one and sign in first:\n` +
+        `  open -na "Google Chrome" --args --remote-debugging-port=9222 --user-data-dir="$HOME/.chrome-otto"`,
+    );
+  }
+
+  // The existing context carries the cookies; a fresh one would not.
+  const context = browser.contexts()[0];
+  if (!context) throw new Error('the debuggable Chrome has no open window');
+  const page = await context.newPage();
+
+  try {
+    for (const vp of pending(scene)) {
+      const dir = prepare(scene.id, vp);
+      // A CDP-attached context has a fixed deviceScaleFactor, so film at the
+      // output resolution directly rather than scaling a smaller viewport up.
+      await page.setViewportSize(
+        vp.key === 'mobile' ? { width: 900, height: 1600 } : { width: 1920, height: 1080 },
+      );
+      await page.goto(remote.url, { waitUntil: 'networkidle', timeout: 90_000 });
+      if (remote.settleSelector) {
+        await page.waitForSelector(remote.settleSelector, { timeout: 30_000 });
+      }
+      await page.waitForTimeout(2500);
+
+      const text = await page.evaluate(() => document.body.innerText);
+      if (remote.signedInText && !text.includes(remote.signedInText)) {
+        throw new Error(
+          `that Chrome is not signed in to ${remote.url} — log in there first, then re-run`,
+        );
+      }
+
+      // Rewrite the identifying names before a single frame is taken. Doing it
+      // here rather than blurring afterwards means the originals never reach a
+      // PNG in the first place.
+      await page.evaluate((rules) => {
+        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        const swap = (s) =>
+          rules.reduce(
+            (acc, [find, to]) =>
+              find.source ? acc.replace(new RegExp(find.source, find.flags), to) : acc.split(find).join(to),
+            s,
+          );
+        for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+          const next = swap(n.nodeValue);
+          if (next !== n.nodeValue) n.nodeValue = next;
+        }
+        for (const el of document.querySelectorAll('input[value], [title], img[alt]')) {
+          if (el.value) el.value = swap(el.value);
+          if (el.title) el.title = swap(el.title);
+          if (el.alt) el.alt = swap(el.alt);
+        }
+      }, (remote.anonymise ?? []).map(([f, t]) => [f instanceof RegExp ? { source: f.source, flags: f.flags } : f, t]));
+
+      const left = await page.evaluate((words) => {
+        const t = document.body.innerText;
+        return words.filter((w) => t.includes(w));
+      }, remote.forbidden ?? []);
+      if (left.length) {
+        throw new Error(`anonymisation missed: ${left.join(', ')} — add rules to REMOTES.${scene.remote}`);
+      }
+
+      // Kill the app's own entrance animation so frame 1 is already settled.
+      await page.addStyleTag({
+        content: '*,*::before,*::after{animation:none!important;transition:none!important}',
+      });
+
+      const travel = await page.evaluate(
+        () => document.documentElement.scrollHeight - window.innerHeight,
+      );
+      const span = Math.max(0, travel - 40);
+
+      for (let i = 0; i < frames; i++) {
+        const t = i / (frames - 1);
+        const eased = t * t * (3 - 2 * t);
+        await page.evaluate((y) => window.scrollTo(0, y), Math.round(span * eased));
+        await page.waitForTimeout(16);
+        await page.screenshot({ path: path.join(dir, frameName(i)) });
+      }
+
+      console.log(`  capture ${scene.id}-${vp.key} (${frames} frames, pan ${Math.round(span)}px)`);
+    }
+  } finally {
+    await page.close();
+    // Detach only — this is the reader's browser, not ours to close.
+    await browser.close();
+  }
+}
+
 // ------------------------------------------------------------------- main
 
 async function main() {
@@ -209,10 +317,16 @@ async function main() {
   }
   if (todo.length === 0) return;
 
+  // A remote scene brings its own (already-running) browser.
+  for (const scene of todo.filter((s) => s.kind === 'remote')) await captureRemote(scene);
+
+  const rest = todo.filter((s) => s.kind !== 'remote');
+  if (rest.length === 0) return;
+
   const browser = await chromium.launch();
   const booted = new Map();
   try {
-    for (const scene of todo) {
+    for (const scene of rest) {
       if (scene.kind === 'explainer') {
         await captureExplainer(browser, scene);
         continue;

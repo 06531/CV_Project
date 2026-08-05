@@ -19,6 +19,12 @@ export const SCENES = [
   { id: 'schedule-tour', kind: 'app', app: 'schedule', frames: 140 },
   { id: 'schedule-tenancy', kind: 'explainer', frames: 140 },
   { id: 'schedule-booking', kind: 'explainer', frames: 140 },
+
+  // TDS eDOC (OTTO). The tour films a system we cannot boot locally, so it
+  // attaches to a browser you have already signed in — see REMOTES.
+  { id: 'otto-tour', kind: 'remote', remote: 'otto', frames: 140 },
+  { id: 'otto-flow', kind: 'explainer', frames: 140 },
+  { id: 'otto-control', kind: 'explainer', frames: 140 },
 ];
 
 /**
@@ -40,6 +46,46 @@ export const APPS = {
     locale: 'zh-TW',
     /** Leave headroom at the bottom so the last frames aren't dead space. */
     tailPx: 40,
+  },
+};
+
+/**
+ * Systems we cannot boot locally, filmed through a browser you have already
+ * signed in yourself. Start it with:
+ *
+ *   open -na "Google Chrome" --args --remote-debugging-port=9222 \
+ *     --user-data-dir="$HOME/.chrome-otto"
+ *
+ * …log in there once, then run the capture. No password ever reaches this repo.
+ *
+ * `anonymise` runs in the page before the first frame. The UAT data is already
+ * synthetic, so this only rewrites the names that would otherwise identify a
+ * real customer, office or account.
+ */
+export const REMOTES = {
+  otto: {
+    cdp: 'http://localhost:9222',
+    url: 'https://tlkboxuat.tradelinksig.com/scm-sms/home.do',
+    /** The document grid has painted by the time this exists. */
+    settleSelector: 'table',
+    /** Sanity check: if we are looking at the CAS login page, stop. */
+    signedInText: 'Shipment Management',
+    /** Applied to every text node, in order. */
+    anonymise: [
+      ['Oi-China', 'Test-China'],
+      ['Oi China', 'Test-China'],
+      ['Oi Bangladesh', 'Test Bangladesh'],
+      ['Oi Turkey', 'Test Turkey'],
+      ['48968.TL', '10042.TL'],
+      ['48009.TL', '10042.TL'],
+      ['New Light', 'Demo Trader'],
+      ['newlight', 'demo'],
+      // Document numbers keep their shape, lose their value.
+      [/\b0\d{5}-(\d{4})\b/g, '900412-$1'],
+      [/\b0\d{5}-\d{6,}\b/g, '900412-123456'],
+    ],
+    /** Nothing from this list may survive into a frame. */
+    forbidden: ['Oi-China', 'Oi China', 'Oi Bangladesh', 'Oi Turkey', '48968', '48009', 'newlight', 'New Light'],
   },
 };
 

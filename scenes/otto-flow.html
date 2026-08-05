@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>otto-flow — scroll-world explainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="scene.css">
+<style>
+  /* One shipment's documents crossing four parties and two countries, and the
+     status track underneath that says how far it has got.
+     Shared shell lives in scene.css; only this scene's own layout is here. */
+  .flow { position: relative; margin-top: clamp(12px, 1.8vmin, 22px); }
+  #wires path { opacity: .45; stroke-dasharray: 4 5; }
+  #token { fill: var(--accent); opacity: 0; }
+
+  .row.chain { gap: clamp(12px, 2.2vmin, 34px); align-items: stretch; }
+  .step { min-width: clamp(112px, 15vmin, 178px); }
+  .step .card__meta { min-height: 1.7em; }
+
+  /* Which forwarder a document leaves by is a plug-in, one per partner. */
+  .channels {
+    margin-top: clamp(12px, 1.8vmin, 22px);
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 5px;
+  }
+  .channels .chip { font-size: clamp(9px, .98vmin, 11.5px); }
+
+  /* Draft → Validated → Sent → Received. */
+  .track { margin-top: clamp(16px, 2.4vmin, 30px); display: flex; align-items: stretch; gap: 0; }
+  .stage {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    font-family: var(--mono);
+    font-size: clamp(9.5px, 1.02vmin, 12px);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .stage .bar {
+    width: 100%; height: 4px; border-radius: 999px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+  }
+  .stage.is-done .bar { background: var(--ok); border-color: transparent; }
+  .stage.is-done { color: var(--ok); font-weight: 700; }
+
+  /* Portrait has room for about half of this. Three across rather than two
+     (five cards in two rows, not three), one line of channels instead of
+     seven chips, and the status labels lose their parentheticals. */
+  .channels .short { display: none; }
+
+  @media (max-aspect-ratio: 3/4) {
+    .flow { margin-top: 8px; }
+    .row.chain { flex-wrap: wrap; gap: 5px; }
+    .step { flex: 1 1 calc(33.333% - 4px); min-width: 0; }
+    .step .card__name { font-size: 11px; }
+    .step .card__meta { margin-top: 5px; min-height: 0; }
+    .step .chip { font-size: 9.5px; padding: 3px 5px; }
+    .channels { margin-top: 9px; gap: 4px; }
+    .channels .full { display: none; }
+    .channels .short { display: inline-block; }
+    .channels .chip { font-size: 10px; padding: 3px 6px; }
+    .track { margin-top: 11px; }
+    .stage { font-size: 9.5px; gap: 4px; }
+    .stage .qualifier { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="board">
+    <div class="window">
+      <div class="titlebar">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="name">TDS eDOC — shipment 900412-0001</span>
+      </div>
+      <div class="body">
+        <div class="prompt"><span class="sigil">$</span> <span id="typed"></span><span class="caret" id="caret"></span></div>
+
+        <div class="flow" id="flow">
+          <svg id="wires" class="wires" preserveAspectRatio="none">
+            <path id="seg0"></path><path id="seg1"></path><path id="seg2"></path><path id="seg3"></path>
+            <circle id="token" r="4.5" cx="-99" cy="-99"></circle>
+          </svg>
+
+          <div class="row chain" id="chain">
+            <div class="card step" id="step0">
+              <div class="card__head">
+                <!-- lucide: factory -->
+                <svg viewBox="0 0 24 24"><path d="M2 20h20"/><path d="M4 20V9l6 4V9l6 4V6h4v14"/></svg>
+                <span class="card__name">supplier</span>
+              </div>
+              <div class="card__meta"><span class="chip">uploads</span></div>
+            </div>
+
+            <div class="card step" id="step1">
+              <div class="card__head">
+                <!-- lucide: files -->
+                <svg viewBox="0 0 24 24"><path d="M15 2H8a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V6z"/><path d="M15 2v4h4"/><path d="M4 7v13a2 2 0 0 0 2 2h9"/></svg>
+                <span class="card__name">TDS eDOC</span>
+              </div>
+              <div class="card__meta"><span class="chip is-model">25 doc types</span><span class="chip">from template</span></div>
+            </div>
+
+            <div class="card step" id="step2">
+              <div class="card__head">
+                <!-- lucide: scan-search -->
+                <svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg>
+                <span class="card__name">cross-doc check</span>
+              </div>
+              <div class="card__meta"><span class="chip" id="chipCheck">HS Code regex</span></div>
+            </div>
+
+            <div class="card step" id="step3">
+              <div class="card__head">
+                <!-- lucide: ship -->
+                <svg viewBox="0 0 24 24"><path d="M2 21c1.6 0 1.6-1 3.2-1s1.6 1 3.2 1 1.6-1 3.2-1 1.6 1 3.2 1 1.6-1 3.2-1"/><path d="M4 18 3 9h18l-1 9"/><path d="M12 3v6"/></svg>
+                <span class="card__name">forwarder</span>
+              </div>
+              <div class="card__meta"><span class="chip" id="chipPdf">PDF + XML</span></div>
+            </div>
+
+            <div class="card step" id="step4">
+              <div class="card__head">
+                <!-- lucide: building-2 -->
+                <svg viewBox="0 0 24 24"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18"/><path d="M2 22h20"/><path d="M10 6h4M10 10h4M10 14h4"/></svg>
+                <span class="card__name">buyer</span>
+              </div>
+              <div class="card__meta"><span class="chip">receives</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="channels" id="channels"></div>
+
+        <div class="track" id="track"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const COMMAND = 'send Purchase Order 900412-0001 to forwarder';
+  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+  const seg = (p, from, to) => { const x = clamp((p - from) / (to - from), 0, 1); return x * x * (3 - 2 * x); };
+  const $ = (id) => document.getElementById(id);
+
+  const board = $('board'), typed = $('typed'), caret = $('caret');
+  const steps = [0, 1, 2, 3, 4].map((i) => $('step' + i));
+  const paths = [0, 1, 2, 3].map((i) => $('seg' + i));
+  const token = $('token');
+  const chipCheck = $('chipCheck'), chipPdf = $('chipPdf');
+
+  // One out-channel implementation per partner — the repo has a factory for
+  // each of these under scm-dms-iochannel-otto.
+  const CHANNELS = ['SFTP · Tlk', 'SFTP · Jet', 'SFTP · Seko', 'SFTP · Manor', 'SFTP · ADH', 'SFTP · LGM', 'email'];
+  // Two renderings of the same fact — a phone frame cannot hold seven chips.
+  $('channels').innerHTML =
+    CHANNELS.map((c) => `<span class="chip full">${c}</span>`).join('') +
+    '<span class="chip short">SFTP · 6 forwarders</span><span class="chip short">email</span>';
+  const channelChips = Array.from($('channels').children);
+
+  const STAGES = [
+    ['Draft', ''],
+    ['Validated', ''],
+    ['Sent', ' (To Forwarder)'],
+    ['Received', ''],
+  ];
+  $('track').innerHTML = STAGES.map(([s, q]) =>
+    `<div class="stage"><span class="bar"></span><span>${s}<span class="qualifier">${q}</span></span></div>`).join('');
+  const stageEls = Array.from($('track').children);
+
+  /** Connect the gap between adjacent cards — never across their faces. The
+      row wraps to a grid in portrait, so pick the axis from the geometry. */
+  function wirePaths() {
+    for (let i = 0; i < 4; i++) {
+      const a = steps[i], b = steps[i + 1];
+      const ax = a.offsetLeft + a.offsetWidth / 2, ay = a.offsetTop + a.offsetHeight / 2;
+      const bx = b.offsetLeft + b.offsetWidth / 2, by = b.offsetTop + b.offsetHeight / 2;
+      let d;
+      if (Math.abs(by - ay) > 8) {
+        const y0 = a.offsetTop + a.offsetHeight, y1 = b.offsetTop;
+        const mid = y0 + (y1 - y0) * 0.5;
+        d = `M ${ax} ${y0} C ${ax} ${mid}, ${bx} ${mid}, ${bx} ${y1}`;
+      } else {
+        const rightwards = bx > ax;
+        const x0 = rightwards ? a.offsetLeft + a.offsetWidth : a.offsetLeft;
+        const x1 = rightwards ? b.offsetLeft : b.offsetLeft + b.offsetWidth;
+        d = `M ${x0} ${ay} L ${x1} ${by}`;
+      }
+      paths[i].setAttribute('d', d);
+    }
+  }
+
+  function reveal(el, t, lift) {
+    el.style.opacity = t;
+    el.style.transform = `translateY(${(1 - t) * (lift == null ? 14 : lift)}px)`;
+  }
+
+  let last = { i: 0, total: 2 };
+
+  window.__setFrame = function (i, total) {
+    last = { i, total };
+    const p = total > 1 ? clamp(i / (total - 1), 0, 1) : 0;
+    wirePaths();
+
+    // 0.00–0.12 — the request types itself out.
+    const chars = Math.round(seg(p, 0.01, 0.12) * COMMAND.length);
+    typed.textContent = COMMAND.slice(0, chars);
+    caret.style.opacity = p > 0.16 ? 0 : (Math.floor(p * 44) % 2 ? 0.25 : 1);
+
+    // 0.06–0.32 — the five parties arrive, left to right.
+    steps.forEach((el, k) => reveal(el, seg(p, 0.06 + k * 0.04, 0.20 + k * 0.04)));
+
+    // 0.26–0.40 — the channels behind the two SFTP hops.
+    channelChips.forEach((chip, k) => {
+      const t = seg(p, 0.26 + k * 0.012, 0.36 + k * 0.012);
+      chip.style.opacity = t;
+      chip.style.transform = `scale(${0.9 + t * 0.1})`;
+    });
+
+    // 0.36–0.86 — the document walks the chain. `walk` is 0..4: integer part is
+    // which gap it is crossing, fraction is how far along.
+    const walk = seg(p, 0.36, 0.86) * 4;
+    steps.forEach((el, k) => el.classList.toggle('is-lead', 1 - clamp(Math.abs(walk - k), 0, 1) > 0.35));
+
+    const idx = Math.min(3, Math.floor(walk));
+    const path = paths[idx];
+    const drawn = clamp(walk - idx, 0, 1);
+    paths.forEach((el, k) => { el.style.opacity = k < idx ? 0.45 : k === idx ? 0.2 + drawn * 0.25 : 0.12; });
+    const len = path.getTotalLength();
+    if (len > 0) {
+      const pt = path.getPointAtLength(len * drawn);
+      token.setAttribute('cx', pt.x);
+      token.setAttribute('cy', pt.y);
+      token.style.opacity = p > 0.37 && p < 0.9 ? 1 : 0;
+    }
+
+    // The two cards that do work say what they did, once the document is past.
+    const checked = walk >= 2.4;
+    chipCheck.textContent = checked ? 'HS Code ✓' : 'HS Code regex';
+    chipCheck.className = checked ? 'chip is-ok' : 'chip';
+    const rendered = walk >= 3.2;
+    chipPdf.textContent = rendered ? 'PDF + XML out' : 'PDF + XML';
+    chipPdf.className = rendered ? 'chip is-ok' : 'chip';
+
+    // 0.44–0.94 — the status track fills in behind it.
+    stageEls.forEach((el, k) => {
+      const t = seg(p, 0.40 + k * 0.05, 0.52 + k * 0.05);
+      el.style.opacity = t;
+      el.classList.toggle('is-done', walk >= k * 1.05 + 0.45);
+    });
+
+    // Continuous slow push-in so no stretch of the clip is a frozen frame.
+    const settle = seg(p, 0.90, 1);
+    const scale = 1 + p * 0.045 - settle * 0.012;
+    board.style.transform = `translateY(${(0.5 - p) * 24}px) scale(${scale.toFixed(4)})`;
+
+    document.documentElement.dataset.frame = String(i);
+  };
+
+  window.__setFrame(0, 2);
+  window.addEventListener('resize', () => window.__setFrame(last.i, last.total));
+})();
+</script>
+</body>
+</html>

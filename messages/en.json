@@ -173,6 +173,21 @@
           "eyebrow": "Nothing lands unchecked",
           "title": "Then it has to pass",
           "body": "Developer hands to tester. Both message files move together or switching language shows raw keys; typecheck and build run before any of it counts as done."
+        },
+        "otto-tour": {
+          "eyebrow": "Production, not a prototype",
+          "title": "A document desk for a supply chain",
+          "body": "Tradelink's platform, running: folders that hold a whole shipment, a grid you can filter down any column, and twenty-five document types across sea, air, rail and courier. Screens are from the UAT environment, with names replaced."
+        },
+        "otto-flow": {
+          "eyebrow": "Four parties, two hops",
+          "title": "A document nobody re-types",
+          "body": "It arrives over SFTP, opens from a template, is checked against the other documents in its folder, and leaves as PDF and XML on whichever channel that forwarder uses — six of them, plus email. The status track is what everyone watches."
+        },
+        "otto-control": {
+          "eyebrow": "Who may touch it, and what it is called",
+          "title": "Permissions and numbers, by rule",
+          "body": "Rights are granted down an account → team → role tree, so an operator can draft but not delete. Document numbers come from a rule — prefix, zero-padded counter, check digit — and the interesting part is what happens when the counter runs out."
         }
       }
     },
