@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>schedule-tenancy — scroll-world explainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="scene.css">
+<style>
+  /* One deployment, one database — and every school gets its own address,
+     its own brand and its own QR code. Shared shell lives in scene.css. */
+  .urlrow { display: flex; align-items: center; gap: clamp(12px, 2vmin, 22px); }
+  .urlbar {
+    flex: 1;
+    display: flex; align-items: center; gap: 9px;
+    padding: clamp(9px, 1.3vmin, 14px) clamp(12px, 1.6vmin, 18px);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface-2);
+    min-width: 0;
+  }
+  .urlbar svg { width: 15px; height: 15px; flex: none; stroke: var(--muted); fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .urlbar .prompt { min-height: 0; }
+  .urlbar .host { color: var(--muted); }
+  .urlbar .slug { color: var(--accent); font-weight: 700; }
+
+  /* Deterministic QR: a fixed module map, drawn as a grid of squares. */
+  .qr { display: grid; gap: 2px; padding: 7px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; flex: none; }
+  .qr i { display: block; width: clamp(3px, .55vmin, 6px); height: clamp(3px, .55vmin, 6px); background: var(--ink); border-radius: 1px; }
+  .qr i.off { background: transparent; }
+
+  .flow { position: relative; margin-top: clamp(30px, 4.2vmin, 56px); }
+  #wires path { opacity: .5; }
+  .row.tenants { gap: clamp(12px, 2.2vmin, 32px); margin-top: clamp(52px, 7vmin, 92px); align-items: stretch; }
+
+  .tenant { min-width: clamp(150px, 19vmin, 216px); padding-top: clamp(14px, 2vmin, 22px); }
+  .tenant::before {
+    content: "";
+    position: absolute; inset: 0 0 auto 0;
+    height: 5px;
+    border-radius: 12px 12px 0 0;
+    background: var(--brand);
+  }
+  .tenant .card__head svg { stroke: var(--brand); }
+  .tenant .chip.is-brand { background: color-mix(in srgb, var(--brand) 14%, transparent); border-color: transparent; color: var(--brand); font-weight: 700; }
+
+  @media (max-aspect-ratio: 3/4) {
+    /* QR to the left in portrait — the scroll-world parks its Skip control in
+       the top-right corner of a phone frame. */
+    .urlrow { flex-direction: row-reverse; gap: 10px; }
+    .urlbar { padding: 8px 12px; }
+    .qr { padding: 4px; gap: 1px; }
+    .qr i { width: 1.5px; height: 1.5px; }
+    .flow { margin-top: 10px; }
+    .row.tenants { flex-direction: column; align-items: stretch; gap: 6px; margin-top: 16px; }
+    /* The card's name is already the slug — the chips would just repeat it,
+       and the features they list are in the scene's copy. */
+    .tenant { padding-top: 10px; }
+    .tenant::before { height: 4px; }
+    .tenant .card__meta { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="board">
+    <div class="window">
+      <div class="titlebar">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="name">schedule — one deployment, many schools</span>
+      </div>
+      <div class="body">
+        <div class="urlrow">
+          <div class="urlbar">
+            <!-- lucide: link -->
+            <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <div class="prompt"><span class="host" id="host"></span><span class="slug" id="slug"></span><span class="caret" id="caret"></span></div>
+          </div>
+          <div class="qr" id="qr" aria-hidden="true"></div>
+        </div>
+
+        <div class="flow" id="flow">
+          <svg id="wires" class="wires" preserveAspectRatio="none"><path id="wire0"></path><path id="wire1"></path><path id="wire2"></path></svg>
+
+          <div class="row">
+            <div class="card is-lead" id="cardCore">
+              <div class="card__head">
+                <!-- lucide: database -->
+                <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>
+                <span class="card__name">one codebase</span>
+              </div>
+              <div class="card__meta" id="coreMeta"></div>
+            </div>
+          </div>
+
+          <div class="row tenants" id="tenants"></div>
+        </div>
+
+        <ul class="log" id="log">
+          <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>every query scoped by <b>company_id</b> &nbsp;·&nbsp; no school sees another's data</span></li>
+          <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><b>QR code</b> on the flyer opens that school's page &nbsp;·&nbsp; no app install</span></li>
+          <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><b>3 languages</b> &nbsp;·&nbsp; zh-HK / zh-CN / en, switchable per visitor</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const HOST = 'schedule.app/c/';
+  const SLUG = 'abc-music';
+  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+  const seg = (p, from, to) => { const x = clamp((p - from) / (to - from), 0, 1); return x * x * (3 - 2 * x); };
+  const $ = (id) => document.getElementById(id);
+
+  const board = $('board'), hostEl = $('host'), slugEl = $('slug'), caret = $('caret');
+  const logItems = Array.from($('log').children);
+
+  // ---- QR: a fixed 21x21 module map. Not a real payload — a recognisable
+  // glyph — but it is deterministic, which is all the capture needs.
+  const QR_SIZE = 21;
+  const qr = $('qr');
+  qr.style.gridTemplateColumns = `repeat(${QR_SIZE}, auto)`;
+  const finder = (r, c) => {
+    const inBox = (r0, c0) => r >= r0 && r < r0 + 7 && c >= c0 && c < c0 + 7;
+    const ring = (r0, c0) => {
+      const dr = r - r0, dc = c - c0;
+      const edge = dr === 0 || dr === 6 || dc === 0 || dc === 6;
+      const core = dr >= 2 && dr <= 4 && dc >= 2 && dc <= 4;
+      return edge || core;
+    };
+    if (inBox(0, 0)) return ring(0, 0);
+    if (inBox(0, QR_SIZE - 7)) return ring(0, QR_SIZE - 7);
+    if (inBox(QR_SIZE - 7, 0)) return ring(QR_SIZE - 7, 0);
+    return null;
+  };
+  for (let r = 0; r < QR_SIZE; r++) {
+    for (let c = 0; c < QR_SIZE; c++) {
+      const f = finder(r, c);
+      // Deterministic pseudo-noise for the data area — a hash, never Math.random.
+      const on = f === null ? (((r * 7 + c * 13 + ((r * c) % 5)) % 3) === 0) : f;
+      const cell = document.createElement('i');
+      if (!on) cell.className = 'off';
+      qr.appendChild(cell);
+    }
+  }
+
+  // ---- The three tenants.
+  const TENANTS = [
+    { name: 'abc-music', brand: '#0d7490', chips: ['brand page', 'map'] },
+    { name: 'bright-arts', brand: '#b45309', chips: ['calendar', 'enrolment'] },
+    { name: 'harbour-dance', brand: '#6d28d9', chips: ['staff', 'QR'] },
+  ];
+  const tenantsRow = $('tenants');
+  tenantsRow.innerHTML = TENANTS.map((t) => `
+    <div class="card tenant" style="--brand:${t.brand}">
+      <div class="card__head">
+        <svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M10 21v-6h4v6"/></svg>
+        <span class="card__name">${t.name}</span>
+      </div>
+      <div class="card__meta">
+        <span class="chip is-brand">/c/${t.name}</span>
+        ${t.chips.map((c) => `<span class="chip">${c}</span>`).join('')}
+      </div>
+    </div>`).join('');
+  const tenantCards = Array.from(tenantsRow.children);
+
+  const CORE_META = [
+    { label: 'Express + PostgreSQL', accent: false },
+    { label: 'row-level tenancy', accent: true },
+  ];
+  $('coreMeta').innerHTML = CORE_META
+    .map((m) => `<span class="chip${m.accent ? ' is-model' : ''}">${m.label}</span>`)
+    .join('');
+  const coreChips = Array.from($('coreMeta').children);
+
+  const cardCore = $('cardCore');
+  const wires = [0, 1, 2].map((i) => $('wire' + i));
+
+  /** Redraw the connectors — the flow box is fluid, so measure every frame. */
+  function wirePaths() {
+    const x0 = cardCore.offsetLeft + cardCore.offsetWidth / 2;
+    const y0 = cardCore.offsetTop + cardCore.offsetHeight;
+    tenantCards.forEach((el, i) => {
+      const x1 = el.offsetLeft + el.offsetWidth / 2;
+      const y1 = el.offsetTop;
+      const mid = y0 + (y1 - y0) * 0.55;
+      wires[i].setAttribute('d', `M ${x0} ${y0} C ${x0} ${mid}, ${x1} ${mid}, ${x1} ${y1}`);
+      wires[i].style.stroke = TENANTS[i].brand;
+    });
+  }
+
+  function reveal(el, t, lift) {
+    el.style.opacity = t;
+    el.style.transform = `translateY(${(1 - t) * (lift == null ? 14 : lift)}px)`;
+  }
+
+  let last = { i: 0, total: 2 };
+
+  window.__setFrame = function (i, total) {
+    last = { i, total };
+    const p = total > 1 ? clamp(i / (total - 1), 0, 1) : 0;
+    wirePaths();
+
+    // 0.00–0.22 — the address types itself out, host first then the tenant slug.
+    const full = HOST + SLUG;
+    const chars = Math.round(seg(p, 0.02, 0.22) * full.length);
+    hostEl.textContent = full.slice(0, Math.min(chars, HOST.length));
+    slugEl.textContent = chars > HOST.length ? full.slice(HOST.length, chars) : '';
+    caret.style.opacity = p > 0.26 ? 0 : (Math.floor(p * 40) % 2 ? 0.25 : 1);
+
+    // 0.24–0.36 — the QR for that address materialises beside it.
+    const qrT = seg(p, 0.24, 0.36);
+    qr.style.opacity = qrT;
+    qr.style.transform = `scale(${(0.86 + qrT * 0.14).toFixed(4)})`;
+
+    // 0.30–0.44 — the shared core, then what it guarantees.
+    reveal(cardCore, seg(p, 0.30, 0.42));
+    coreChips.forEach((chip, k) => {
+      const t = seg(p, 0.38 + k * 0.04, 0.46 + k * 0.04);
+      chip.style.opacity = t;
+      chip.style.transform = `scale(${0.9 + t * 0.1})`;
+    });
+
+    // 0.46–0.70 — one wire per school, then the school itself.
+    tenantCards.forEach((el, k) => {
+      const wire = wires[k];
+      const len = wire.getTotalLength();
+      const t = seg(p, 0.46 + k * 0.03, 0.60 + k * 0.03);
+      wire.style.strokeDasharray = len;
+      wire.style.strokeDashoffset = len * (1 - t);
+      reveal(el, seg(p, 0.54 + k * 0.04, 0.68 + k * 0.04));
+    });
+
+    // 0.70–0.96 — what that buys, line by line.
+    logItems.forEach((li, k) => reveal(li, seg(p, 0.70 + k * 0.06, 0.84 + k * 0.06), 8));
+
+    // Continuous slow push-in so no stretch of the clip is a frozen frame.
+    const settle = seg(p, 0.88, 1);
+    const scale = 1 + p * 0.045 - settle * 0.012;
+    board.style.transform = `translateY(${(0.5 - p) * 24}px) scale(${scale.toFixed(4)})`;
+
+    document.documentElement.dataset.frame = String(i);
+  };
+
+  window.__setFrame(0, 2);
+  window.addEventListener('resize', () => window.__setFrame(last.i, last.total));
+})();
+</script>
+</body>
+</html>

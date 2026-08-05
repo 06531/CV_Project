@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>schedule-booking — scroll-world explainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="scene.css">
+<style>
+  /* One enrolment, end to end: a seat is held, the teacher's week updates and
+     Stripe confirms — in that order, or not at all. Shell is in scene.css. */
+  .flow { position: relative; margin-top: clamp(26px, 3.6vmin, 48px); }
+  #wires path { opacity: .45; stroke-dasharray: 4 5; }
+
+  .row.steps {
+    gap: clamp(14px, 2.6vmin, 40px);
+    align-items: stretch;
+  }
+  .step { min-width: clamp(130px, 17vmin, 200px); }
+  .step .card__meta { min-height: 1.9em; }
+
+  /* Seat capacity, ten pips. */
+  .pips { display: flex; gap: 3px; margin-top: 10px; }
+  .pips i { display: block; width: clamp(7px, .95vmin, 11px); height: clamp(7px, .95vmin, 11px); border-radius: 2px; background: var(--surface-2); border: 1px solid var(--line); }
+  .pips i.taken { background: var(--accent); border-color: transparent; }
+  .pips i.fresh { background: var(--ok); border-color: transparent; }
+  .seats { margin-top: 8px; font-family: var(--mono); font-size: clamp(11px, 1.15vmin, 14px); color: var(--muted); }
+  .seats b { color: var(--ink); font-weight: 700; }
+
+  .chip.is-ok { background: color-mix(in srgb, var(--ok) 14%, transparent); border-color: transparent; color: var(--ok); font-weight: 700; }
+
+  /* The request travelling down the pipeline. */
+  #token { fill: var(--accent); }
+  #tokenHalo { fill: var(--accent); opacity: .18; }
+
+  /* Portrait: four stacked cards will not fit in the band a phone leaves us,
+     so the pipeline folds into a 2x2 and the connectors route row to row. */
+  @media (max-aspect-ratio: 3/4) {
+    .flow { margin-top: 16px; }
+    .row.steps { flex-wrap: wrap; gap: 8px; }
+    .step { flex: 1 1 calc(50% - 4px); min-width: 0; }
+    .pips { margin-top: 7px; gap: 2px; }
+    .pips i { width: 8px; height: 8px; }
+    .seats { margin-top: 6px; font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="board">
+    <div class="window">
+      <div class="titlebar">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="name">schedule — enrolment, end to end</span>
+      </div>
+      <div class="body">
+        <div class="prompt"><span class="sigil">$</span> <span id="typed"></span><span class="caret" id="caret"></span></div>
+
+        <div class="flow" id="flow">
+          <svg id="wires" class="wires" preserveAspectRatio="none">
+            <path id="seg0"></path><path id="seg1"></path><path id="seg2"></path>
+            <circle id="tokenHalo" r="9" cx="-99" cy="-99"></circle>
+            <circle id="token" r="4.5" cx="-99" cy="-99"></circle>
+          </svg>
+
+          <div class="row steps" id="steps">
+            <div class="card step" id="step0">
+              <div class="card__head">
+                <!-- lucide: user-round -->
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+                <span class="card__name">student</span>
+              </div>
+              <div class="card__meta"><span class="chip">picks a slot</span></div>
+            </div>
+
+            <div class="card step" id="step1">
+              <div class="card__head">
+                <!-- lucide: users-round -->
+                <svg viewBox="0 0 24 24"><circle cx="10" cy="8" r="4"/><path d="M2 21a8 8 0 0 1 13.3-6"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/><path d="M22 21a7 7 0 0 0-5-6.7"/></svg>
+                <span class="card__name">capacity</span>
+              </div>
+              <div class="pips" id="pips"></div>
+              <div class="seats"><b id="taken">8</b> / 10 seats</div>
+            </div>
+
+            <div class="card step" id="step2">
+              <div class="card__head">
+                <!-- lucide: calendar-days -->
+                <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+                <span class="card__name">teacher</span>
+              </div>
+              <div class="card__meta"><span class="chip" id="chipWeek">week updated</span></div>
+            </div>
+
+            <div class="card step" id="step3">
+              <div class="card__head">
+                <!-- lucide: credit-card -->
+                <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                <span class="card__name">payment</span>
+              </div>
+              <div class="card__meta"><span class="chip" id="chipPay">Stripe checkout</span></div>
+            </div>
+          </div>
+        </div>
+
+        <ul class="log" id="log">
+          <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>seat held inside a <b>transaction</b> &nbsp;·&nbsp; the eleventh booking is refused, not queued</span></li>
+          <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><b>roles</b> decide the view &nbsp;·&nbsp; student, teacher, admin — same API, different scope</span></li>
+          <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><b>Stripe webhook</b> confirms &nbsp;·&nbsp; paid, and only then confirmed</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const COMMAND = 'POST /api/companies/abc-music/bookings';
+  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+  const seg = (p, from, to) => { const x = clamp((p - from) / (to - from), 0, 1); return x * x * (3 - 2 * x); };
+  const $ = (id) => document.getElementById(id);
+
+  const board = $('board'), typed = $('typed'), caret = $('caret');
+  const steps = [0, 1, 2, 3].map((i) => $('step' + i));
+  const paths = [0, 1, 2].map((i) => $('seg' + i));
+  const token = $('token'), halo = $('tokenHalo');
+  const logItems = Array.from($('log').children);
+  const chipWeek = $('chipWeek'), chipPay = $('chipPay'), takenEl = $('taken');
+
+  const SEATS = 10;
+  const pipsEl = $('pips');
+  for (let i = 0; i < SEATS; i++) pipsEl.appendChild(document.createElement('i'));
+  const pips = Array.from(pipsEl.children);
+
+  /** Connect the gap between adjacent cards — never across their faces. The
+      row folds to a 2x2 in portrait, so pick the axis from the laid-out
+      geometry: same row, go sideways; different row, drop out of the bottom
+      and curve into the next one's top. */
+  function wirePaths() {
+    for (let i = 0; i < 3; i++) {
+      const a = steps[i], b = steps[i + 1];
+      const ax = a.offsetLeft + a.offsetWidth / 2, ay = a.offsetTop + a.offsetHeight / 2;
+      const bx = b.offsetLeft + b.offsetWidth / 2, by = b.offsetTop + b.offsetHeight / 2;
+      let d;
+      if (Math.abs(by - ay) > 8) {
+        const y0 = a.offsetTop + a.offsetHeight, y1 = b.offsetTop;
+        const mid = y0 + (y1 - y0) * 0.5;
+        d = `M ${ax} ${y0} C ${ax} ${mid}, ${bx} ${mid}, ${bx} ${y1}`;
+      } else {
+        const rightwards = bx > ax;
+        const x0 = rightwards ? a.offsetLeft + a.offsetWidth : a.offsetLeft;
+        const x1 = rightwards ? b.offsetLeft : b.offsetLeft + b.offsetWidth;
+        d = `M ${x0} ${ay} L ${x1} ${by}`;
+      }
+      paths[i].setAttribute('d', d);
+    }
+  }
+
+  function reveal(el, t, lift) {
+    el.style.opacity = t;
+    el.style.transform = `translateY(${(1 - t) * (lift == null ? 14 : lift)}px)`;
+  }
+
+  let last = { i: 0, total: 2 };
+
+  window.__setFrame = function (i, total) {
+    last = { i, total };
+    const p = total > 1 ? clamp(i / (total - 1), 0, 1) : 0;
+    wirePaths();
+
+    // 0.00–0.20 — the request types itself out.
+    const chars = Math.round(seg(p, 0.02, 0.20) * COMMAND.length);
+    typed.textContent = COMMAND.slice(0, chars);
+    caret.style.opacity = p > 0.24 ? 0 : (Math.floor(p * 40) % 2 ? 0.25 : 1);
+
+    // 0.22–0.46 — the four stages appear left to right.
+    steps.forEach((el, k) => reveal(el, seg(p, 0.22 + k * 0.045, 0.36 + k * 0.045)));
+
+    // 0.46–0.92 — the request walks the pipeline. `flow` is 0..3: the integer
+    // part is which gap it is crossing, the fraction how far along.
+    const flow = seg(p, 0.46, 0.92) * 3;
+    steps.forEach((el, k) => {
+      const near = 1 - clamp(Math.abs(flow - k), 0, 1);
+      el.classList.toggle('is-lead', near > 0.35);
+    });
+
+    const idx = Math.min(2, Math.floor(flow));
+    const path = paths[idx];
+    const drawn = clamp(flow - idx, 0, 1);
+    paths.forEach((el, k) => {
+      el.style.opacity = k < idx ? 0.45 : k === idx ? 0.2 + drawn * 0.25 : 0.12;
+    });
+    const len = path.getTotalLength();
+    if (len > 0) {
+      const pt = path.getPointAtLength(len * drawn);
+      const visible = p > 0.46 && p < 0.95;
+      for (const c of [token, halo]) {
+        c.setAttribute('cx', pt.x);
+        c.setAttribute('cy', pt.y);
+        c.style.opacity = visible ? (c === halo ? 0.18 : 1) : 0;
+      }
+    }
+
+    // The seat is taken as the request clears the capacity check.
+    const booked = flow >= 1.35;
+    takenEl.textContent = booked ? '9' : '8';
+    pips.forEach((pip, k) => {
+      pip.className = k < 8 ? 'taken' : k === 8 && booked ? 'fresh' : '';
+    });
+
+    chipWeek.textContent = flow >= 2.2 ? 'Tue 19:00 added' : 'week updated';
+    chipWeek.className = flow >= 2.2 ? 'chip is-ok' : 'chip';
+    const paid = flow >= 2.9;
+    chipPay.textContent = paid ? 'paid' : 'Stripe checkout';
+    chipPay.className = paid ? 'chip is-ok' : 'chip';
+
+    // 0.72–0.98 — the guarantees, line by line.
+    logItems.forEach((li, k) => reveal(li, seg(p, 0.72 + k * 0.055, 0.86 + k * 0.055), 8));
+
+    // Continuous slow push-in so no stretch of the clip is a frozen frame.
+    const settle = seg(p, 0.88, 1);
+    const scale = 1 + p * 0.045 - settle * 0.012;
+    board.style.transform = `translateY(${(0.5 - p) * 24}px) scale(${scale.toFixed(4)})`;
+
+    document.documentElement.dataset.frame = String(i);
+  };
+
+  window.__setFrame(0, 2);
+  window.addEventListener('resize', () => window.__setFrame(last.i, last.total));
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+{
+  "name": "cv-site",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "assets": "npm run assets:pdf && npm run assets:schedule && npm run assets:world",
+    "assets:pdf": "node scripts/render-pdf-pages.mjs",
+    "assets:schedule": "node scripts/capture-schedule.mjs",
+    "assets:world": "npm run assets:world:capture && npm run assets:world:encode",
+    "assets:world:capture": "node scripts/capture-world-frames.mjs",
+    "assets:world:encode": "node scripts/encode-world-clips.mjs",
+    "check:world": "node scripts/world-check.mjs .shots",
+    "shot": "node scripts/shot.mjs"
+  },
+  "dependencies": {
+    "lucide-react": "^1.28.0",
+    "next": "16.3.0",
+    "next-intl": "^4.13.5",
+    "next-themes": "^0.4.6",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "playwright": "^1.62.1",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

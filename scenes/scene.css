@@ -1,0 +1,177 @@
+/* Shared shell for every explainer scene of the scroll-worlds.
+   Palette mirrors the site's light tokens (src/app/globals.css) — the clips are
+   filmed once and shown under both themes, and light reads better behind the
+   dark scrim the scroll-world lays over the bottom of the frame.
+
+   A scene must render as a pure function of `p` (0..1) set by
+   window.__setFrame — no CSS animations, no timers, no randomness — so
+   Playwright can step through it frame by frame and get a deterministic,
+   scrubbable clip. Hence: no `transition`, no `animation` anywhere in here. */
+
+:root {
+  --bg: #f6f8fa;
+  --surface: #ffffff;
+  --surface-2: #eef2f6;
+  --line: #dbe3ea;
+  --ink: #0f1720;
+  --muted: #5b6b7c;
+  --accent: #0d7490;
+  --accent-soft: rgba(13, 116, 144, 0.12);
+  --ok: #15803d;
+  --sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Same faint grid the site uses behind its hero. */
+body::before {
+  content: "";
+  position: fixed; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(to right, var(--line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+  background-size: 64px 64px;
+  opacity: .55;
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 40%, #000 20%, transparent 78%);
+}
+
+/* The scroll-world lays its translated copy across the bottom of the frame, so
+   the board sits in the upper two-thirds and never ends up under the text. */
+#stage {
+  position: relative; z-index: 1;
+  width: 100%; height: 100%;
+  display: grid; align-items: center; justify-items: center;
+  padding: 4vmin 4vmin 26vh;
+}
+
+/* The whole board drifts + scales slightly across the clip so the camera never
+   sits perfectly still — that is what sells it as footage. */
+#board {
+  width: 100%;
+  max-width: 1000px;
+  transform-origin: 50% 40%;
+}
+
+.window {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 24px 60px -28px rgba(15, 23, 32, .28);
+  overflow: hidden;
+}
+
+.titlebar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+}
+.dot { width: 11px; height: 11px; border-radius: 50%; background: var(--line); }
+.titlebar .name {
+  margin-left: 6px;
+  font-family: var(--mono); font-size: 12px; color: var(--muted);
+}
+
+.body { padding: clamp(20px, 3vmin, 34px); }
+
+.card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: clamp(12px, 1.7vmin, 20px) clamp(16px, 2.2vmin, 26px);
+  min-width: clamp(190px, 24vmin, 268px);
+  box-shadow: 0 10px 28px -20px rgba(15, 23, 32, .35);
+}
+.card.is-lead { border-color: var(--accent); box-shadow: 0 12px 34px -18px rgba(13, 116, 144, .5); }
+
+.card__head { display: flex; align-items: center; gap: 9px; }
+.card__head svg { width: 17px; height: 17px; stroke: var(--accent); fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.card__name { font-family: var(--mono); font-size: clamp(12px, 1.3vmin, 15px); font-weight: 700; letter-spacing: .02em; }
+
+.card__meta { margin-top: 9px; display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font-family: var(--mono);
+  font-size: clamp(9.5px, 1.02vmin, 12px);
+  line-height: 1;
+  padding: 5px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.chip.is-model { background: var(--accent-soft); border-color: transparent; color: var(--accent); font-weight: 700; }
+
+.log {
+  margin-top: clamp(20px, 2.8vmin, 34px);
+  font-family: var(--mono);
+  font-size: clamp(11.5px, 1.2vmin, 14.5px);
+  line-height: 1.95;
+  color: var(--muted);
+}
+.log li { list-style: none; display: flex; align-items: center; gap: 9px; }
+.log svg { width: 14px; height: 14px; flex: none; stroke: var(--ok); fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.log b { color: var(--ink); font-weight: 600; }
+
+/* A terminal-ish caption line, for scenes that narrate a step. */
+.prompt {
+  font-family: var(--mono);
+  font-size: clamp(13px, 1.35vmin, 17px);
+  line-height: 1.6;
+  color: var(--ink);
+  white-space: pre-wrap;
+  min-height: 1.6em;
+}
+.prompt .sigil { color: var(--accent); }
+.caret {
+  display: inline-block;
+  width: .55em; height: 1.05em;
+  margin-left: 1px;
+  vertical-align: -.18em;
+  background: var(--accent);
+}
+
+/* Connector wires between cards. Scenes draw the paths themselves. */
+.wires { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.wires path { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; }
+
+.row { display: flex; justify-content: center; }
+
+/* Portrait capture (720x1280). This is not the landscape board shrunk down —
+   the scroll-world lays its translated copy plus a scrim across the lower half
+   of a phone frame, so a scene has roughly the top 55% to work in. Everything
+   here buys vertical room: tighter chrome, smaller cards, and no log (the
+   scene's copy in messages/*.json already says what those lines say). */
+@media (max-aspect-ratio: 3/4) {
+  /* The top of a phone frame is under the site's sticky header, so start
+     below it rather than filming content nobody will see. */
+  #stage { align-items: start; justify-items: center; padding: 12vh 4vw 38vh; }
+  #board { max-width: 100%; transform-origin: 50% 0; }
+
+  /* Window chrome earns its place on a desktop frame; on a phone it is 30px
+     of the little room there is. */
+  .titlebar { display: none; }
+  .body { padding: 12px; }
+
+  .prompt { font-size: 11.5px; line-height: 1.5; }
+
+  .card { min-width: 0; padding: 9px 11px; box-shadow: 0 6px 18px -14px rgba(15, 23, 32, .35); }
+  .card__head { gap: 7px; }
+  .card__head svg { width: 15px; height: 15px; }
+  .card__name { font-size: 13px; }
+  .card__meta { margin-top: 7px; gap: 4px; }
+  .chip { font-size: 11px; padding: 4px 7px; }
+
+  .log { display: none; }
+}

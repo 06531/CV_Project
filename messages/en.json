@@ -1,0 +1,270 @@
+{
+  "meta": {
+    "title": "Kevin Wu — Software Developer",
+    "description": "CV of Kevin Wu, a Hong Kong software developer working across React, Vue, Node.js, Java and Golang.",
+    "portfolioTitle": "Portfolio — Kevin Wu"
+  },
+  "nav": {
+    "about": "About",
+    "experience": "Experience",
+    "skills": "Skills",
+    "education": "Education",
+    "portfolio": "Portfolio",
+    "cv": "CV",
+    "menu": "Menu",
+    "close": "Close",
+    "theme": "Toggle theme",
+    "language": "Language"
+  },
+  "hero": {
+    "title": "Software Developer",
+    "tagline": "I turn logical ideas into working systems — and ship them faster with an AI-assisted workflow.",
+    "downloadCv": "Download CV",
+    "viewPortfolio": "View portfolio",
+    "email": "Email",
+    "phone": "Phone",
+    "location": "Location",
+    "locationValue": "Hong Kong"
+  },
+  "about": {
+    "heading": "About me",
+    "body": "A software developer who enjoys turning logical ideas into working systems. Through hands-on client project work, I've learned to quickly pick up new tools and adapt to fast-paced environments, and I use Claude Code as an agentic development partner — orchestrating multiple AI agents, automating recurring engineering tasks, and running AI-assisted code and security reviews — to ship full-stack features faster without sacrificing quality."
+  },
+  "experience": {
+    "heading": "Work experience",
+    "current": "Now",
+    "techStack": "Tech stack",
+    "viewProject": "View project",
+    "roles": {
+      "schedule": {
+        "company": "Multi-tenant Course Scheduling Platform",
+        "role": "Personal Project",
+        "projects": {
+          "main": {
+            "name": "Course platform for multiple companies",
+            "description": "A multi-company course platform where each school gets its own URL, teachers manage their own courses, and students scan a QR code to browse a calendar and enrol.",
+            "bullets": [
+              "Built a multi-company course platform: QR-code onboarding, month-calendar enrolment, cross-company time-conflict checks, role-based staff management, Google SSO sign-in, embedded location maps (Leaflet / OpenStreetMap), and a Stripe billing skeleton.",
+              "Designed a flexible scheduling engine: weekly runs auto-generate an editable per-session table (individual date/time overrides, add or skip sessions) with a one-click \"renew term\" flow that carries settings forward.",
+              "Developed it end-to-end with an AI-assisted, multi-agent workflow using Claude Code — model routing by task complexity, plan-mode design before implementation, and an autonomous weekly task pipeline that self-verifies (typecheck / build) and commits.",
+              "Hardened the backend — per-IP rate limiting, security headers (helmet), JWT fail-fast, user-enumeration protection — and applied AI-driven code & security review to catch and fix an account-impersonation vulnerability in the company-registration flow."
+            ]
+          }
+        }
+      },
+      "cti": {
+        "company": "Continuous Technologies International Limited",
+        "role": "Programmer",
+        "projects": {
+          "smc": {
+            "name": "SMC Project",
+            "description": "A customer engagement and routing system integrated with Genesys Cloud to assign communication channels and live agents for chat interactions, auto-replies, and report generation.",
+            "bullets": [
+              "Developed and maintained the Vue.js frontend interface for live agent chat interactions.",
+              "Implemented WebSockets on both frontend and backend for real-time chat messaging and system notifications.",
+              "Built features for agents to search, view, and log customer profiles and historical data during live interactions.",
+              "Configured routing queues with custom trigger conditions and automated actions for chat distribution.",
+              "Developed Node.js backend logic to batch-export CSV reports and chat histories, generating download paths based on user authorization.",
+              "Created background configuration modules for admins to manage multiple dashboard layouts and UI themes.",
+              "Wrote SQL queries and stored procedures in Microsoft SQL Server to handle system data storage and report calculations."
+            ]
+          },
+          "serverIntegration": {
+            "name": "Server Integration Backend",
+            "description": "High-performance endpoints connecting directly into the core server database.",
+            "bullets": [
+              "Developed endpoints using Golang to handle high-performance connections directly into the core server database."
+            ]
+          }
+        }
+      },
+      "tradelink": {
+        "company": "Tradelink Electronic Commerce Limited",
+        "role": "Programmer",
+        "projects": {
+          "otto": {
+            "name": "TDS eDOC Project (OTTO)",
+            "description": "A specialized document management system built on Tradelink's \"Trader Documentation Service\" platform for OTTO International (OI). It connects an extensive network of supply chain partners — overseas buyers, sellers and freight forwarders — to facilitate, process and optimize multi-national document exchange and workflow automation.",
+            "bullets": [
+              "Developed and maintained the core modules of the global supply chain system and handled daily production support.",
+              "Used JasperReports and XSL-FO to generate standard PDF and XML business documents.",
+              "Wrote Cron jobs to handle real-time data sync, automated system housekeeping, and log rotations.",
+              "Integrated SFTP workflows to automate document transfers from multinational suppliers and forwarders.",
+              "Built a barcode/QR code generation module and implemented logic to format sequential unit codes (prefix + padded zeros + current number) with rollover handling.",
+              "Added Regex validators to enforce strict data formatting (e.g. specific lengths and counts for HS Code verification).",
+              "Implemented Role-Based Access Control (RBAC) to manage user permissions (create, view, edit, delete, lock) across different hierarchy accounts and teams.",
+              "Created a document template feature allowing users to save completed forms for faster re-use later."
+            ]
+          },
+          "kiosk": {
+            "name": "CMHK Kiosk Project",
+            "description": "A warehouse management system (WMS) kiosk application developed for China Mobile Hong Kong (CMHK), deployed across 4 kiosk units for cargo registration and automated inventory control.",
+            "bullets": [
+              "Worked closely with internal teams and frontline staff to design and implement features for daily logistics operations.",
+              "Used Socket.io to build a real-time notification system, connecting client kiosks (receiving/shipping options) with warehouse staff units via push notifications and sound alerts.",
+              "Handled asynchronous status transitions to lock the kiosk UI when a staff member is processing an order, preventing duplicate assignments.",
+              "Developed backend verification for scanned QR codes to check order data, formats, and duplicates against the database in real-time.",
+              "Implemented an automated quantity check that cross-references scanned items and highlights the frontend UI (e.g. changing to green) when matching.",
+              "Generated downloadable PDFs via system-created QR codes upon order completion.",
+              "Built a heartbeat mechanism where each kiosk sends its machine ID via sockets every 20 seconds, triggering a red alert UI if a unit goes offline."
+            ]
+          }
+        }
+      }
+    }
+  },
+  "skills": {
+    "heading": "Skills",
+    "groups": {
+      "frontend": "Frontend",
+      "backend": "Backend",
+      "database": "Database",
+      "devops": "DevOps",
+      "ai": "AI-assisted development",
+      "others": "Others",
+      "languages": "Languages"
+    },
+    "notes": {
+      "multiAgent": "AI multi-agent orchestration",
+      "promptEngineering": "Prompt & workflow engineering (custom skills / hooks)",
+      "headlessAutomation": "Headless AI task automation (scheduled agents)"
+    }
+  },
+  "education": {
+    "heading": "Education",
+    "items": {
+      "tecky": {
+        "school": "Tecky Academy",
+        "body": "16 weeks of intensive training on building up programming skill sets and acquiring the skills to see my own projects through to completion."
+      }
+    }
+  },
+  "portfolio": {
+    "heading": "Portfolio",
+    "subheading": "Selected work, with screens from the real systems.",
+    "world": {
+      "label": "How this was built",
+      "skip": "Skip",
+      "replay": "Replay",
+      "caseStudy": "Case study",
+      "progress": "{current} / {total}",
+      "scenes": {
+        "schedule-tour": {
+          "eyebrow": "Shipped, not mocked",
+          "title": "This is the running product",
+          "body": "A school's public page, live: brand header, embedded map, the month's classes. React, Express and PostgreSQL, built end to end."
+        },
+        "schedule-tenancy": {
+          "eyebrow": "One deployment, many schools",
+          "title": "Every school gets its own address",
+          "body": "A slug in the URL and a QR code on the flyer are all it takes. One codebase, one database, and every query scoped by company — so no school can reach another's data."
+        },
+        "schedule-booking": {
+          "eyebrow": "Enrolment, end to end",
+          "title": "A seat is held, or it isn't",
+          "body": "The capacity check runs inside a transaction, the teacher's week updates, and Stripe confirms before anything counts as booked. Same API for student, teacher and admin — different scope."
+        },
+        "agents": {
+          "eyebrow": "AI-assisted development",
+          "title": "One prompt. A whole team.",
+          "body": "A dispatcher reads the request, picks the role and the difficulty, and routes it to the right model — then developer and tester hand off, typecheck and build before anything lands."
+        }
+      }
+    },
+    "backToCv": "Back to CV",
+    "backToPortfolio": "All projects",
+    "viewCaseStudy": "Case study",
+    "featured": "Featured",
+    "techStack": "Tech stack",
+    "highlights": "Highlights",
+    "screens": "Screens",
+    "links": "Links",
+    "desktop": "Desktop",
+    "mobile": "Mobile",
+    "shotCount": "{count, plural, one {# screen} other {# screens}}",
+    "lightbox": {
+      "previous": "Previous",
+      "next": "Next",
+      "close": "Close",
+      "counter": "{current} / {total}"
+    },
+    "projects": {
+      "schedule": {
+        "name": "Multi-tenant Course Scheduling Platform",
+        "role": "Personal project · full stack",
+        "note": "Personal project — runs locally, no public deployment.",
+        "summary": "A multi-tenant course platform: every school gets its own URL and QR code, teachers manage courses and rosters from a company dashboard, and students scan once to browse a month calendar and enrol across schools.",
+        "highlights": [
+          "Multi-tenant by company slug (`/c/:slug`), with a per-company QR code students scan to land straight on the enrolment page — no app install.",
+          "Scheduling engine turns a weekly recurrence rule into a concrete, editable session table: reschedule, cancel or restore a single session, or override just that session's location.",
+          "Cross-company time-conflict checking, enrolment deadlines and capacity limits, all enforced server-side.",
+          "Company role tiers (owner / manager / teacher) with an audit trail recording who changed which course, when, and what the old and new values were.",
+          "Google OAuth SSO, JWT + bcrypt auth, per-IP rate limiting and security headers; an AI-driven security review caught an account-impersonation hole in company registration.",
+          "Whitelisted branding settings (not raw CSS) let each company and teacher theme their own public page.",
+          "Built end-to-end with a Claude Code multi-agent workflow — plan-mode design, model routing by task complexity, and an autonomous pipeline that typechecks, builds and commits."
+        ],
+        "shots": {
+          "directory": "Company directory — every school on the platform",
+          "company-calendar": "Company page: contact card, embedded OpenStreetMap and the course calendar",
+          "student-booking": "Course detail with per-session booking and capacity status",
+          "teacher-overview": "Company dashboard overview stats",
+          "teacher-courses": "Course management: filters, session counts, enrolment counts, renew term",
+          "teacher-calendar": "Teacher calendar — cancel, restore or relocate a single session",
+          "teacher-staff": "Role-based staff management (owner / manager / teacher)",
+          "teacher-qr": "Per-company enrolment QR code, printable",
+          "platform": "Platform admin: every company, with approval and plan controls"
+        }
+      },
+      "otto": {
+        "name": "TDS eDOC (OTTO)",
+        "role": "Tradelink Electronic Commerce Limited · Programmer",
+        "summary": "A document management system on Tradelink's Trader Documentation Service platform for OTTO International, connecting overseas buyers, sellers and freight forwarders for multi-national document exchange and workflow automation.",
+        "highlights": [
+          "Core modules of the global supply chain system, plus daily production support.",
+          "PDF and XML business documents generated with JasperReports and XSL-FO.",
+          "Cron jobs for real-time data sync, system housekeeping and log rotation.",
+          "SFTP workflows automating document transfers from multinational suppliers and forwarders.",
+          "Barcode / QR generation with sequential unit codes (prefix + padded zeros + current number) and rollover handling.",
+          "Regex validators enforcing strict formats, e.g. HS Code verification.",
+          "Role-based access control across hierarchical accounts, teams and roles.",
+          "Reusable document templates so users can save a completed form and start the next one from it."
+        ],
+        "shots": {}
+      },
+      "kiosk": {
+        "name": "CMHK Kiosk",
+        "role": "Tradelink Electronic Commerce Limited · Programmer",
+        "summary": "A warehouse management kiosk application for China Mobile Hong Kong, deployed across 4 kiosk units for cargo registration and automated inventory control.",
+        "highlights": [
+          "Real-time notifications over Socket.io connecting client kiosks with warehouse staff units, including sound alerts.",
+          "Asynchronous status transitions lock the kiosk UI while a staff member processes an order, preventing duplicate assignments.",
+          "Backend verification of scanned QR codes against the database — format, existence and duplicate scans.",
+          "Automated quantity checking that cross-references scanned items and turns the row green when an item is complete.",
+          "Downloadable PDFs generated on order completion, reachable through a system-created QR code.",
+          "Heartbeat mechanism: each kiosk broadcasts its machine ID every 20 seconds, and a unit that stops reporting is flagged red as 'connection fail'."
+        ],
+        "shots": {}
+      },
+      "startie": {
+        "name": "Startie",
+        "role": "Client project",
+        "summary": "An event display and management platform: create, edit and publish events, choose from multiple event profile templates, and pay through Stripe for priority listing and premium customization features.",
+        "highlights": [
+          "Three auth roles — super admin, event owner and event joiner — with an admin review / approve / reject flow before an event goes public.",
+          "Event dashboard covering schedule, activities, descriptions, requirements and FAQ, built on react-hook-form.",
+          "Rich text via ckeditor5-react for event descriptions and profile content.",
+          "react-timezone-select to keep dates accurate when the backend runs in a different time zone.",
+          "Stripe Checkout integration for VIP plans and paid customization features.",
+          "Unlimited custom tags, target groups and awards, with automatic prize-pool totals.",
+          "Three selectable profile templates plus cover image uploads; per-event reports for visitors, comments and submissions.",
+          "Next.js frontend with Recoil for global state, talking to an MVC backend over a RESTful API."
+        ],
+        "shots": {}
+      }
+    }
+  },
+  "footer": {
+    "builtWith": "Built with Next.js, React and Tailwind CSS.",
+    "sourcePdf": "Original PDF"
+  }
+}

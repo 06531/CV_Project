@@ -1,0 +1,146 @@
+@import "tailwindcss";
+
+/* next-themes writes `class="dark"` on <html>; teach Tailwind v4 to follow it
+   instead of the OS media query. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-mono);
+}
+
+:root {
+  --bg: #f6f8fa;
+  --surface: #ffffff;
+  --surface-2: #eef2f6;
+  --line: #dbe3ea;
+  --ink: #0f1720;
+  --muted: #5b6b7c;
+  --accent: #0d7490;
+  --accent-soft: rgba(13, 116, 144, 0.12);
+}
+
+.dark {
+  --bg: #0b0f14;
+  --surface: #111823;
+  --surface-2: #16202c;
+  --line: #1e2735;
+  --ink: #e6edf3;
+  --muted: #8b98a9;
+  --accent: #22d3ee;
+  --accent-soft: rgba(34, 211, 238, 0.12);
+}
+
+html {
+  scroll-behavior: smooth;
+  /* Sticky mobile header must not cover the section we jump to. */
+  scroll-padding-top: 5rem;
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--ink);
+  /* Inter carries no CJK glyphs, so name the Chinese faces explicitly —
+     otherwise Windows and Linux fall back to whatever `system-ui` resolves to. */
+  font-family: var(--font-inter), "PingFang TC", "Noto Sans TC", "Microsoft JhengHei",
+    ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tailwind v4's preflight no longer gives buttons a pointer cursor (v3 did),
+   which leaves every icon button feeling dead. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+/* Subtle grid backdrop, developer-terminal flavoured. Masked so it fades out
+   below the hero and long content stays readable. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--line) 70%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--line) 70%, transparent) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 100% 55% at 50% 0%, #000 15%, transparent 75%);
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Grow a small control's hit area to the 44px touch minimum without changing
+   how big it looks. Touch pointers only — a mouse doesn't need the padding,
+   and the invisible overlay would otherwise swallow hovers on neighbours. */
+@media (hover: none) and (pointer: coarse) {
+  .tap-target {
+    position: relative;
+  }
+
+  .tap-target::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media print {
+  body::before,
+  .no-print {
+    display: none !important;
+  }
+
+  :root {
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #ffffff;
+    --ink: #000000;
+    --muted: #333333;
+    --line: #cccccc;
+  }
+
+  .print-avoid-break {
+    break-inside: avoid;
+  }
+}

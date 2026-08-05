@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(rm -fr *)",
+      "Bash(rm -r *)",
+      "Bash(rm -f *)",
+      "Bash(rm -rf /)",
+      "Bash(rm -rf ~)",
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf .)",
+      "Bash(rm -rf ./*)",
+      "Bash(sudo rm *)",
+      "Bash(find * -delete)",
+      "Bash(find * -exec rm *)",
+      "Bash(git clean -*d*)",
+      "Bash(git reset --hard *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // .tool_response.filePath // empty'); [ -n \"$f\" ] && echo \"$(date '+%Y-%m-%d %H:%M') | $f\" >> \"/Users/kevin06531/Documents/CV_project/.claude/change-log.txt\" 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,53 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# scroll-world 逐幀截圖(中間產物,encode 完就唔使)
+/.frames
+
+# 驗收截圖 + 未入版本控制嘅專案素材(source code / 測試帳號 / 原始截圖)
+/.shots*
+/_material
+
+# claude code (agent 定義同 settings 要入版本控制,改檔紀錄唔使)
+.claude/change-log.txt
+.claude/settings.local.json
+.claude/skills/**/__pycache__/
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts

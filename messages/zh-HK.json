@@ -1,0 +1,270 @@
+{
+  "meta": {
+    "title": "Kevin Wu — 軟件開發工程師",
+    "description": "Kevin Wu 的個人履歷:香港軟件開發工程師,涉獵 React、Vue、Node.js、Java 與 Golang。",
+    "portfolioTitle": "作品集 — Kevin Wu"
+  },
+  "nav": {
+    "about": "關於我",
+    "experience": "工作經驗",
+    "skills": "技能",
+    "education": "學歷",
+    "portfolio": "作品集",
+    "cv": "履歷",
+    "menu": "選單",
+    "close": "關閉",
+    "theme": "切換主題",
+    "language": "語言"
+  },
+  "hero": {
+    "title": "軟件開發工程師",
+    "tagline": "把有邏輯的構想變成真正跑得起的系統,並用 AI 輔助流程更快交付。",
+    "downloadCv": "下載履歷",
+    "viewPortfolio": "查看作品集",
+    "email": "電郵",
+    "phone": "電話",
+    "location": "地點",
+    "locationValue": "香港"
+  },
+  "about": {
+    "heading": "關於我",
+    "body": "我是一位喜歡把邏輯構想變成實際運作系統的軟件開發者。在多個客戶專案的實戰中,我學會快速上手新工具、適應節奏急速的環境;同時我以 Claude Code 作為 agentic 開發夥伴 —— 協調多個 AI agent、把重複的工程工作自動化、並執行 AI 輔助的程式碼與安全審查 —— 令全端功能可以更快交付而唔犧牲質素。"
+  },
+  "experience": {
+    "heading": "工作經驗",
+    "current": "至今",
+    "techStack": "技術棧",
+    "viewProject": "查看專案",
+    "roles": {
+      "schedule": {
+        "company": "多租戶課程排課平台",
+        "role": "個人專案",
+        "projects": {
+          "main": {
+            "name": "多公司課程平台",
+            "description": "一個多公司課程平台:每間課程公司有獨立網址,老師管理自己的課程,學生掃 QR code 即可瀏覽月曆並報名。",
+            "bullets": [
+              "建構多公司課程平台:QR code 落地報名、月曆式報名、跨公司時間衝突檢查、角色分級的員工管理、Google SSO 登入、內嵌地圖(Leaflet / OpenStreetMap),以及 Stripe 收費骨架。",
+              "設計靈活的排課引擎:由每週循環規則自動產生可編輯的堂次表(可單堂改日期/時間、加堂或跳堂),並提供一鍵「續期」流程把設定沿用到下一期。",
+              "以 Claude Code 的 AI 輔助多 agent 工作流由頭到尾開發 —— 按任務複雜度做 model routing、實作前先用 plan mode 設計,以及一條每週自動執行、會自行驗證(typecheck / build)並提交的任務管線。",
+              "加固後端 —— 每 IP 流量限制、安全標頭(helmet)、JWT fail-fast、防止帳號枚舉 —— 並以 AI 驅動的程式碼與安全審查,找出並修復公司註冊流程中的帳號冒用漏洞。"
+            ]
+          }
+        }
+      },
+      "cti": {
+        "company": "Continuous Technologies International Limited",
+        "role": "程式開發員",
+        "projects": {
+          "smc": {
+            "name": "SMC 專案",
+            "description": "一套與 Genesys Cloud 整合的客戶互動與分流系統,負責分派溝通渠道與真人客服處理即時對話、自動回覆及報表產生。",
+            "bullets": [
+              "開發及維護供真人客服進行即時對話的 Vue.js 前端介面。",
+              "在前後端實作 WebSockets,支援即時訊息與系統通知。",
+              "建立客服在對話期間搜尋、檢視及記錄客戶檔案與歷史資料的功能。",
+              "設定分流佇列的自訂觸發條件與自動化動作,處理對話派發。",
+              "以 Node.js 開發後端邏輯,批次匯出 CSV 報表與對話紀錄,並依使用者權限產生下載路徑。",
+              "建立後台設定模組,讓管理員管理多套儀表板版面與 UI 主題。",
+              "在 Microsoft SQL Server 撰寫 SQL 查詢與預存程序,處理系統資料儲存及報表計算。"
+            ]
+          },
+          "serverIntegration": {
+            "name": "Server 整合後端",
+            "description": "直連核心伺服器資料庫的高效能 endpoint。",
+            "bullets": [
+              "以 Golang 開發 endpoint,直接連接核心伺服器資料庫並處理高效能連線。"
+            ]
+          }
+        }
+      },
+      "tradelink": {
+        "company": "貿易通電子貿易有限公司 (Tradelink)",
+        "role": "程式開發員",
+        "projects": {
+          "otto": {
+            "name": "TDS eDOC 專案(OTTO)",
+            "description": "建構於 Tradelink「Trader Documentation Service」平台、為 OTTO International 打造的專用文件管理系統,串連海外買家、賣家及貨運代理等龐大供應鏈網絡,處理並優化跨國文件交換與流程自動化。",
+            "bullets": [
+              "開發及維護全球供應鏈系統的核心模組,並負責日常生產環境支援。",
+              "使用 JasperReports 及 XSL-FO 產生標準 PDF 與 XML 商業文件。",
+              "撰寫 Cron job 處理即時資料同步、系統自動清理及日誌輪替。",
+              "整合 SFTP 流程,自動化處理跨國供應商與貨運代理的文件傳送。",
+              "建立條碼 / QR code 產生模組,並實作序號格式邏輯(前綴 + 補零 + 目前號碼)及進位重置處理。",
+              "加入 Regex 驗證器強制資料格式(例如 HS Code 的長度與組數驗證)。",
+              "實作角色權限控制(RBAC),管理不同層級帳號與團隊的權限(新增、檢視、編輯、刪除、鎖定)。",
+              "建立文件範本功能,讓使用者儲存已完成的表單以便日後快速重用。"
+            ]
+          },
+          "kiosk": {
+            "name": "CMHK Kiosk 專案",
+            "description": "為中國移動香港(CMHK)開發的倉庫管理系統(WMS)自助機應用,部署於 4 部 kiosk,處理貨物登記與自動化庫存控制。",
+            "bullets": [
+              "與內部團隊及前線同事緊密合作,設計並實作日常物流作業所需功能。",
+              "以 Socket.io 建立即時通知系統,把客戶端 kiosk(收貨 / 出貨)與倉務人員裝置以推播及聲音提示連接起來。",
+              "處理非同步狀態轉換,當有同事正在處理訂單時鎖定 kiosk 介面,避免重複派工。",
+              "開發後端驗證,即時比對掃描 QR code 的訂單資料、格式與重複掃描。",
+              "實作自動數量核對,交叉比對已掃描項目,完成時將介面標示為綠色。",
+              "訂單完成後透過系統產生的 QR code 提供可下載的 PDF。",
+              "建立 heartbeat 機制:每部 kiosk 每 20 秒經 socket 廣播自己的機器 ID,若某部離線則以紅色顯示「連線失敗」。"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "skills": {
+    "heading": "技能",
+    "groups": {
+      "frontend": "前端",
+      "backend": "後端",
+      "database": "資料庫",
+      "devops": "DevOps",
+      "ai": "AI 輔助開發",
+      "others": "其他",
+      "languages": "語言"
+    },
+    "notes": {
+      "multiAgent": "AI 多 agent 協調",
+      "promptEngineering": "Prompt 與工作流設計(自訂 skills / hooks)",
+      "headlessAutomation": "Headless AI 任務自動化(排程 agent)"
+    }
+  },
+  "education": {
+    "heading": "學歷",
+    "items": {
+      "tecky": {
+        "school": "Tecky Academy",
+        "body": "16 週密集訓練,建立程式開發技能組合,並掌握把自己的專案由零做到完成的能力。"
+      }
+    }
+  },
+  "portfolio": {
+    "heading": "作品集",
+    "subheading": "精選作品,附上真實系統的畫面。",
+    "world": {
+      "label": "點樣做出嚟",
+      "skip": "跳過",
+      "replay": "重播",
+      "caseStudy": "查看詳情",
+      "progress": "{current} / {total}",
+      "scenes": {
+        "schedule-tour": {
+          "eyebrow": "真係做出嚟,唔係 mockup",
+          "title": "呢個就係行緊嘅系統",
+          "body": "一間課程公司的對外頁面,真實運作中:品牌頁頭、內嵌地圖、當月課堂。React、Express、PostgreSQL,由頭到尾一手做。"
+        },
+        "schedule-tenancy": {
+          "eyebrow": "一套系統,多間學校",
+          "title": "每間公司有自己的網址",
+          "body": "網址一個 slug、傳單一個 QR code 就夠。一套 code、一個資料庫,而每一句查詢都按公司收窄 —— 一間公司點都掂唔到另一間嘅資料。"
+        },
+        "schedule-booking": {
+          "eyebrow": "報名,由頭到尾",
+          "title": "個位要就留得住,唔要就唔會亂收",
+          "body": "名額檢查行喺 transaction 入面,老師嗰週即刻更新,Stripe 確認咗先當報名成功。學生、老師、管理員用同一套 API,睇到嘅範圍唔同。"
+        },
+        "agents": {
+          "eyebrow": "AI 輔助開發",
+          "title": "一句說話,一隊人開工",
+          "body": "Dispatcher 讀完需求,判斷角色同難度,再分派畀對應的 model —— developer 同 tester 接力,typecheck 同 build 過咗先算數。"
+        }
+      }
+    },
+    "backToCv": "返回履歷",
+    "backToPortfolio": "所有專案",
+    "viewCaseStudy": "查看詳情",
+    "featured": "精選",
+    "techStack": "技術棧",
+    "highlights": "重點",
+    "screens": "畫面",
+    "links": "連結",
+    "desktop": "桌面版",
+    "mobile": "手機版",
+    "shotCount": "{count} 張畫面",
+    "lightbox": {
+      "previous": "上一張",
+      "next": "下一張",
+      "close": "關閉",
+      "counter": "{current} / {total}"
+    },
+    "projects": {
+      "schedule": {
+        "name": "多租戶課程排課平台",
+        "role": "個人專案 · 全端",
+        "note": "個人專案 —— 只在本機運行,未公開部署。",
+        "summary": "一個多租戶課程平台:每間課程公司有獨立網址與 QR code,老師在公司後台管理課程與報名名單,學生掃一次 QR 就能瀏覽月曆並跨公司報名。",
+        "highlights": [
+          "以公司 slug 做多租戶(`/c/:slug`),每間公司有專屬 QR code,學生掃描即直達報名頁,免安裝 App。",
+          "排課引擎把每週循環規則轉成具體、可編輯的堂次表:可改期、取消或恢復單一堂次,亦可只覆寫該堂的上課地點。",
+          "跨公司時間衝突檢查、報名截止與人數上限,全部在後端強制執行。",
+          "公司角色分級(擁有者 / 管理員 / 一般老師),並有操作紀錄留痕:誰、何時、改咗邊門課、舊值與新值。",
+          "Google OAuth SSO、JWT + bcrypt 驗證、每 IP 流量限制與安全標頭;AI 驅動的安全審查更找出公司註冊流程中的帳號冒用漏洞。",
+          "以白名單結構化設定(而非原始 CSS)做品牌化,讓每間公司與每位老師自訂公開頁樣式。",
+          "以 Claude Code 多 agent 工作流由頭到尾開發 —— plan mode 設計、按任務複雜度做 model routing,以及會自動 typecheck、build 並提交的自動化管線。"
+        ],
+        "shots": {
+          "directory": "公司目錄 —— 平台上所有課程公司",
+          "company-calendar": "公司頁:聯絡卡、內嵌 OpenStreetMap 地圖與課程月曆",
+          "student-booking": "課程詳情頁,可逐堂選擇報名並顯示名額狀態",
+          "teacher-overview": "公司後台總覽統計",
+          "teacher-courses": "課程管理:篩選、堂數、報名人數、續期",
+          "teacher-calendar": "老師日曆 —— 取消、恢復或改動單一堂次",
+          "teacher-staff": "角色分級的老師管理(擁有者 / 管理員 / 一般老師)",
+          "teacher-qr": "公司專屬報名 QR code,可列印",
+          "platform": "平台後台:所有公司總覽,含審核與方案控制"
+        }
+      },
+      "otto": {
+        "name": "TDS eDOC(OTTO)",
+        "role": "貿易通電子貿易有限公司 · 程式開發員",
+        "summary": "建構於 Tradelink「Trader Documentation Service」平台、為 OTTO International 打造的文件管理系統,串連海外買家、賣家與貨運代理,處理跨國文件交換及流程自動化。",
+        "highlights": [
+          "全球供應鏈系統的核心模組開發,並負責日常生產環境支援。",
+          "以 JasperReports 及 XSL-FO 產生 PDF 與 XML 商業文件。",
+          "Cron job 負責即時資料同步、系統清理與日誌輪替。",
+          "SFTP 流程自動化處理跨國供應商與貨運代理的文件傳送。",
+          "條碼 / QR code 產生,含序號格式(前綴 + 補零 + 目前號碼)與進位重置。",
+          "Regex 驗證器強制資料格式,例如 HS Code 驗證。",
+          "跨層級帳號、團隊與角色的權限控制(RBAC)。",
+          "可重用的文件範本,讓使用者儲存已完成表單並以此開新單。"
+        ],
+        "shots": {}
+      },
+      "kiosk": {
+        "name": "CMHK Kiosk",
+        "role": "貿易通電子貿易有限公司 · 程式開發員",
+        "summary": "為中國移動香港開發的倉庫管理 kiosk 應用,部署於 4 部自助機,處理貨物登記與自動化庫存控制。",
+        "highlights": [
+          "以 Socket.io 做即時通知,連接客戶端 kiosk 與倉務人員裝置,含聲音提示。",
+          "非同步狀態轉換:同事處理訂單時鎖定 kiosk 介面,避免重複派工。",
+          "後端即時驗證掃描的 QR code —— 格式、是否存在、有否重複掃描。",
+          "自動數量核對,交叉比對已掃描項目,完成的項目會轉為綠色。",
+          "訂單完成後產生可下載 PDF,並透過系統產生的 QR code 取得。",
+          "Heartbeat 機制:每部 kiosk 每 20 秒廣播機器 ID,停止回報的裝置會以紅色標示「連線失敗」。"
+        ],
+        "shots": {}
+      },
+      "startie": {
+        "name": "Startie",
+        "role": "客戶專案",
+        "summary": "活動展示與管理平台:建立、編輯與發佈活動,提供多款活動頁面範本,並以 Stripe 付費取得優先曝光與進階自訂功能。",
+        "highlights": [
+          "三種身分 —— 超級管理員、活動擁有者、參加者 —— 活動公開前需經管理員審核 / 批准 / 拒絕。",
+          "活動後台涵蓋時間表、活動內容、描述、要求與 FAQ,以 react-hook-form 建構。",
+          "以 ckeditor5-react 提供活動描述與頁面內容的富文字編輯。",
+          "用 react-timezone-select 處理時區,避免後端部署於不同時區導致日期錯誤。",
+          "整合 Stripe Checkout 處理 VIP 方案與付費自訂功能。",
+          "可無限新增自訂標籤、目標族群與獎項,獎金總額自動計算。",
+          "三款可選活動頁面範本及封面圖上傳;每個活動有訪客數、留言數與報名數報表。",
+          "Next.js 前端配 Recoil 管理全域狀態,經 RESTful API 與 MVC 後端溝通。"
+        ],
+        "shots": {}
+      }
+    }
+  },
+  "footer": {
+    "builtWith": "以 Next.js、React 與 Tailwind CSS 製作。",
+    "sourcePdf": "原版 PDF"
+  }
+}
