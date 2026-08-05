@@ -199,7 +199,7 @@ export default function ScrollWorld({ scenes, seenKey }: Props) {
           // overlaps the outgoing one — otherwise every seam has half a screen
           // of scroll with no legible copy at all.
           const held = Math.min(
-            smooth((raw + 0.1) / 0.14),
+            smooth((raw + 0.04) / 0.08),
             i === last ? 1 : smooth((1 - raw) / 0.08),
           );
           const shown = y >= s.start - fade && (i === last || y <= s.end + fade);
@@ -347,11 +347,10 @@ export default function ScrollWorld({ scenes, seenKey }: Props) {
           </div>
         ))}
 
-        {/* Bottom scrim + copy. Sits across the frame's lower third so it never
-            covers the subject the camera is moving toward — but it has to reach
-            near-solid under the words themselves, because the footage behind is
-            a busy UI in roughly the same tone as the page. */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 h-[46%] bg-linear-to-t from-bg from-40% via-bg/85 via-75% to-transparent sm:h-[55%]" />
+        {/* Bottom scrim: solid exactly where the words are, gone by the time it
+            reaches the picture. It used to run far higher, which turned the
+            lower third of every scene into fog. */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 h-[40%] bg-linear-to-t from-bg from-75% via-bg/45 via-92% to-transparent sm:h-[32%] sm:from-66% sm:via-88%" />
 
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30">
           <div className="relative mx-auto h-[34svh] max-w-6xl px-4 sm:px-6">
@@ -366,10 +365,12 @@ export default function ScrollWorld({ scenes, seenKey }: Props) {
                 <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
                   {t(`scenes.${scene.id}.eyebrow`)}
                 </p>
-                <h2 className="mt-2 max-w-2xl text-2xl font-bold tracking-tight sm:text-4xl">
+                {/* Smaller on a phone on purpose: every line here is a line the
+                    scene above has to give up. */}
+                <h2 className="mt-1.5 max-w-2xl text-xl font-bold tracking-tight sm:mt-2 sm:text-4xl">
                   {t(`scenes.${scene.id}.title`)}
                 </h2>
-                <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted sm:text-base">
+                <p className="mt-1.5 line-clamp-4 max-w-xl text-[13px] leading-snug text-muted sm:mt-2 sm:line-clamp-none sm:text-base sm:leading-relaxed">
                   {t(`scenes.${scene.id}.body`)}
                 </p>
                 {scene.project && (

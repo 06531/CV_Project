@@ -26,10 +26,17 @@
   .urlbar .host { color: var(--muted); }
   .urlbar .slug { color: var(--accent); font-weight: 700; }
 
-  /* Deterministic QR: a fixed module map, drawn as a grid of squares. */
-  .qr { display: grid; gap: 2px; padding: 7px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; flex: none; }
-  .qr i { display: block; width: clamp(3px, .55vmin, 6px); height: clamp(3px, .55vmin, 6px); background: var(--ink); border-radius: 1px; }
+  /* Deterministic QR: a fixed module map, drawn as a grid of squares. Kept
+     small — 21 modules add up fast, and at its natural size it was the tallest
+     thing in the frame for what is a supporting detail. */
+  .qr { display: grid; gap: 1px; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; flex: none; }
+  .qr i { display: block; width: clamp(2px, .35vmin, 4px); height: clamp(2px, .35vmin, 4px); background: var(--ink); border-radius: 1px; }
   .qr i.off { background: transparent; }
+
+  /* This scene carries a URL row the others do not, which costs it the room
+     the log would need. The three lines below restate the scene's copy, so
+     they are the part that gives way. */
+  .log { display: none; }
 
   .flow { position: relative; margin-top: clamp(30px, 4.2vmin, 56px); }
   #wires path { opacity: .5; }
