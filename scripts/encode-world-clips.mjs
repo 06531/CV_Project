@@ -57,7 +57,9 @@ function keyframeCount(file) {
     ],
     { encoding: 'utf8' },
   );
-  const frames = csv.trim().split('\n');
+  // ffprobe sometimes emits a trailing separator per row — `1,` rather than
+  // `1` — which silently made every clip look like it had no keyframes at all.
+  const frames = csv.trim().split('\n').map((f) => f.trim().replace(/,+$/, ''));
   return { total: frames.length, keys: frames.filter((f) => f === '1').length };
 }
 
@@ -102,7 +104,10 @@ for (const scene of wanted) {
       '-vf', filters.join(','),
       '-c:v', 'libx264',
       '-preset', 'slow',
-      '-crf', String(profile.crf),
+      // A scene may ask for a lower quality: a full-resolution screen recording
+      // of a dense enterprise grid costs several times what a drawn explainer
+      // does, for a beat that is on screen for less than one screen of scroll.
+      '-crf', String(scene.crf ?? profile.crf),
       '-g', String(profile.gop),
       '-keyint_min', String(profile.gop),
       '-sc_threshold', '0',      // don't let scene detection stretch the GOP

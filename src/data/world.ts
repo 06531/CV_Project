@@ -55,9 +55,7 @@ export const PROJECT_WORLDS: Partial<Record<ProjectSlug, WorldScene[]>> = {
     scene('schedule-booking', 'explainer', { scroll: 1.7, linger: 0.4 }),
   ],
   otto: [
-    // TODO: put `scene('otto-tour', 'app', { scroll: 0.9, linger: 0.25 })` back
-    // in front once its clips exist. Filming it needs a Chrome signed in to the
-    // UAT — see REMOTES in scenes/manifest.mjs.
+    scene('otto-tour', 'app', { scroll: 0.9, linger: 0.25 }),
     scene('otto-flow', 'explainer', { scroll: 1.7, linger: 0.4 }),
     scene('otto-control', 'explainer', { scroll: 1.7, linger: 0.4 }),
   ],

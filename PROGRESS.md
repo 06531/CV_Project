@@ -68,6 +68,24 @@
 - 實測:120 次連續 mouse move **冇 long task**;手機同 reduced-motion 兩邊
   `body::after` 嘅 `content` 都係 `none`(層都冇建立)
 
+### OTTO(TDS eDOC)三幕
+- `otto-tour` —— **真 UI**,由你自己登入嘅 Chrome 經 CDP 拍(密碼唔經 repo)
+- `otto-flow` / `otto-control` —— 解說段,內容由 `_material/otto/repo` 讀返嚟
+  (SPI + 實作分模組、一個貨代一個 out-channel factory、獨立嘅 rule-driven 序號產生器
+  連檢查碼、380 個 XSL、`OttowebUI.java` 7,883 行)
+- capture script 加咗 `kind: 'remote'`:接 CDP、**借用你已登入嗰個 tab**
+  (呢個 app 嘅 session 綁 URL,開新 tab 會彈返登入頁)、認得 frameset
+  (內容喺 `main-frame`,而且要捲 `.ui-jqgrid-bdiv` 唔係 document)
+- **匿名化**:拍之前就地改字,唔係事後打格。
+  - 具名規則(公司名、party ID)+ 長數字遮蔽(對付 `3HKTLK…48968…` 呢類複合鍵)
+  - **整欄覆蓋** Office / Customer Code / Party ID Name —— 黑名單漏咗
+    `Oi MELCOSA` / `OAGN` / `MANTRA EXPORTS`,所以改用「呢幾欄一律換走」
+  - `forbidden` 清單守尾門,任何一個仲喺頁面就**拒絕拍**
+  - jqGrid 捲動會重畫行,所以**每一格截圖之前**都重跑一次
+- 拍攝 viewport 對齊顯示比例(桌面 1728×1080、手機 1200×2133),`object-cover` 冇嘢好裁
+- `encode-world-clips.mjs`:修好 keyframe 統計(ffprobe 帶尾逗號,一直報 0),
+  加 per-scene `crf`(真 UI 截圖比手畫解說段重幾倍)
+
 ### SEO
 - `src/app/sitemap.ts`(兩 locale × 6 條路徑,由 `routing.locales` + `PROJECTS` 生成)
 - `src/app/robots.ts`

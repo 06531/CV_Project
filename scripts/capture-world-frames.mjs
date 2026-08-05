@@ -198,6 +198,123 @@ async function captureApp(browser, scene, base) {
 
 // ----------------------------------------------------------- remote scenes
 
+/** Every frame of the page, since these apps are framesets. */
+const everyFrame = (page) => page.frames();
+
+const allFrameText = async (page) => {
+  const parts = await Promise.all(
+    everyFrame(page).map((f) => f.evaluate(() => document.body?.innerText ?? '').catch(() => '')),
+  );
+  return parts.join('\n');
+};
+
+/**
+ * Rewrites the identifying names in place, in every frame. Done in the page
+ * before the shutter rather than blurring the PNG afterwards, so the originals
+ * never reach a file at all.
+ */
+async function anonymise(page, remote) {
+  const rules = (remote.anonymise ?? []).map(([f, t]) => [
+    f instanceof RegExp ? { source: f.source, flags: f.flags } : f,
+    t,
+  ]);
+  for (const frame of everyFrame(page)) {
+    await frame
+      .evaluate(
+        ([rs, minDigits]) => {
+          if (!document.body) return;
+
+          /** Same length, different value, and the same answer every time. */
+          const maskRun = (run) => {
+            let h = 2166136261;
+            for (let i = 0; i < run.length; i++) h = ((h ^ run.charCodeAt(i)) * 16777619) >>> 0;
+            let out = '';
+            while (out.length < run.length) {
+              out += String(h % 10);
+              h = (h * 31 + 7) >>> 0;
+            }
+            return out;
+          };
+
+          const digits = minDigits ? new RegExp(`\\d{${minDigits},}`, 'g') : null;
+          const swap = (s) => {
+            let out = rs.reduce(
+              (acc, [find, to]) =>
+                find.source
+                  ? acc.replace(new RegExp(find.source, find.flags), to)
+                  : acc.split(find).join(to),
+              s,
+            );
+            if (digits) out = out.replace(digits, maskRun);
+            return out;
+          };
+
+          const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+            // Rewriting script and style bodies achieves nothing and risks a lot.
+            acceptNode: (n) =>
+              /^(SCRIPT|STYLE)$/.test(n.parentElement?.tagName ?? '')
+                ? NodeFilter.FILTER_REJECT
+                : NodeFilter.FILTER_ACCEPT,
+          });
+          for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+            const next = swap(n.nodeValue);
+            if (next !== n.nodeValue) n.nodeValue = next;
+          }
+          for (const el of document.querySelectorAll('input, [title], img[alt]')) {
+            if (el.value) el.value = swap(el.value);
+            if (el.title) el.title = swap(el.title);
+            if (el.alt) el.alt = swap(el.alt);
+          }
+        },
+        [rules, remote.maskDigits ?? 0],
+      )
+      .catch(() => {});
+  }
+
+  if (!remote.maskColumns) return;
+  for (const frame of everyFrame(page)) {
+    await frame
+      .evaluate((cols) => {
+        const wanted = new Map(Object.entries(cols));
+        for (const table of document.querySelectorAll('table')) {
+          const heads = table.tHead?.rows?.[0]?.cells;
+          if (!heads) continue;
+          const targets = [];
+          for (let i = 0; i < heads.length; i++) {
+            const label = (heads[i].innerText || '').replace(/\s+/g, ' ').trim();
+            if (wanted.has(label)) targets.push([i, wanted.get(label)]);
+          }
+          if (!targets.length) continue;
+          // jqGrid keeps its header and body in two tables that share a column
+          // order, so the body may be elsewhere in the DOM.
+          const bodies = [table, ...document.querySelectorAll('.ui-jqgrid-btable')];
+          for (const body of bodies) {
+            const rows = body.tBodies?.[0]?.rows ?? [];
+            for (let r = 0; r < rows.length; r++) {
+              for (const [i, values] of targets) {
+                const cell = rows[r].cells[i];
+                if (!cell || !cell.innerText.trim()) continue;
+                cell.textContent = values[r % values.length];
+              }
+            }
+          }
+        }
+      }, remote.maskColumns)
+      .catch(() => {});
+  }
+}
+
+/** Refuses to go on if anything on the forbidden list is still readable. */
+async function assertClean(page, remote, scene) {
+  const text = await allFrameText(page);
+  const left = (remote.forbidden ?? []).filter((w) => text.includes(w));
+  if (left.length) {
+    throw new Error(
+      `anonymisation missed: ${left.join(', ')} — add rules to REMOTES.${scene.remote}`,
+    );
+  }
+}
+
 /**
  * Films a system we cannot boot: attach to a Chrome the reader has already
  * signed in, open a tab in that same context so it shares the session, rewrite
@@ -221,84 +338,106 @@ async function captureRemote(scene) {
     );
   }
 
-  // The existing context carries the cookies; a fresh one would not.
   const context = browser.contexts()[0];
   if (!context) throw new Error('the debuggable Chrome has no open window');
-  const page = await context.newPage();
+
+  // Prefer a tab that is already on the system and already signed in. This app
+  // keeps its session in a `jsessionid` carried on the URL, so a fresh tab —
+  // even in the same context, with all the same cookies — lands back on the
+  // login page. Reuse the reader's tab and leave the navigation alone.
+  const origin = new URL(remote.url).origin;
+
+  let page = null;
+  for (const candidate of context.pages()) {
+    if (!candidate.url().startsWith(origin)) continue;
+    const text = await allFrameText(candidate);
+    if (!remote.signedInText || text.includes(remote.signedInText)) {
+      page = candidate;
+      break;
+    }
+  }
+  const borrowed = Boolean(page);
+  if (!page) page = await context.newPage();
 
   try {
     for (const vp of pending(scene)) {
       const dir = prepare(scene.id, vp);
       // A CDP-attached context has a fixed deviceScaleFactor, so film at the
       // output resolution directly rather than scaling a smaller viewport up.
-      await page.setViewportSize(
-        vp.key === 'mobile' ? { width: 900, height: 1600 } : { width: 1920, height: 1080 },
-      );
-      await page.goto(remote.url, { waitUntil: 'networkidle', timeout: 90_000 });
-      if (remote.settleSelector) {
-        await page.waitForSelector(remote.settleSelector, { timeout: 30_000 });
-      }
+      await page.setViewportSize(remote.viewports[vp.key]);
+      // Navigating a borrowed tab risks bouncing it back to the login page —
+      // it is already where we want it.
+      if (!borrowed) await page.goto(remote.url, { waitUntil: 'networkidle', timeout: 90_000 });
       await page.waitForTimeout(2500);
 
-      const text = await page.evaluate(() => document.body.innerText);
-      if (remote.signedInText && !text.includes(remote.signedInText)) {
+      const inner =
+        page.frames().find((f) => f.name() === remote.frame) ?? page.mainFrame();
+      if (remote.settleSelector) {
+        await inner.waitForSelector(remote.settleSelector, { timeout: 30_000 });
+      }
+      await page.waitForTimeout(1500);
+
+      if (remote.signedInText && !(await allFrameText(page)).includes(remote.signedInText)) {
         throw new Error(
           `that Chrome is not signed in to ${remote.url} — log in there first, then re-run`,
         );
       }
 
-      // Rewrite the identifying names before a single frame is taken. Doing it
-      // here rather than blurring afterwards means the originals never reach a
-      // PNG in the first place.
-      await page.evaluate((rules) => {
-        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-        const swap = (s) =>
-          rules.reduce(
-            (acc, [find, to]) =>
-              find.source ? acc.replace(new RegExp(find.source, find.flags), to) : acc.split(find).join(to),
-            s,
-          );
-        for (let n = walker.nextNode(); n; n = walker.nextNode()) {
-          const next = swap(n.nodeValue);
-          if (next !== n.nodeValue) n.nodeValue = next;
-        }
-        for (const el of document.querySelectorAll('input[value], [title], img[alt]')) {
-          if (el.value) el.value = swap(el.value);
-          if (el.title) el.title = swap(el.title);
-          if (el.alt) el.alt = swap(el.alt);
-        }
-      }, (remote.anonymise ?? []).map(([f, t]) => [f instanceof RegExp ? { source: f.source, flags: f.flags } : f, t]));
-
-      const left = await page.evaluate((words) => {
-        const t = document.body.innerText;
-        return words.filter((w) => t.includes(w));
-      }, remote.forbidden ?? []);
-      if (left.length) {
-        throw new Error(`anonymisation missed: ${left.join(', ')} — add rules to REMOTES.${scene.remote}`);
-      }
+      await anonymise(page, remote);
+      await assertClean(page, remote, scene);
 
       // Kill the app's own entrance animation so frame 1 is already settled.
-      await page.addStyleTag({
-        content: '*,*::before,*::after{animation:none!important;transition:none!important}',
-      });
+      for (const f of page.frames()) {
+        await f
+          .addStyleTag({
+            content: '*,*::before,*::after{animation:none!important;transition:none!important}',
+          })
+          .catch(() => {});
+      }
 
-      const travel = await page.evaluate(
-        () => document.documentElement.scrollHeight - window.innerHeight,
-      );
-      const span = Math.max(0, travel - 40);
+      // The document itself may not scroll at all — this app puts its grid in
+      // an inner container. Pan whatever actually moves.
+      const sel = remote.scrollSelector ?? null;
+      const travel = await inner.evaluate((s) => {
+        const el = s ? document.querySelector(s) : null;
+        return el
+          ? el.scrollHeight - el.clientHeight
+          : document.documentElement.scrollHeight - window.innerHeight;
+      }, sel);
+      const span = Math.max(0, travel - 24);
+      if (span < 40) {
+        console.log(`  note    ${scene.id}-${vp.key}: only ${span}px of travel — the pan will be subtle`);
+      }
 
       for (let i = 0; i < frames; i++) {
         const t = i / (frames - 1);
         const eased = t * t * (3 - 2 * t);
-        await page.evaluate((y) => window.scrollTo(0, y), Math.round(span * eased));
+        await inner.evaluate(
+          ([s, y]) => {
+            const el = s ? document.querySelector(s) : null;
+            if (el) el.scrollTop = y;
+            else window.scrollTo(0, y);
+          },
+          [sel, Math.round(span * eased)],
+        );
         await page.waitForTimeout(16);
+        // Grids like this one re-render their rows as they scroll, which puts
+        // the original values straight back. Re-run the rewrite every frame
+        // rather than trusting one pass at the start.
+        await anonymise(page, remote);
         await page.screenshot({ path: path.join(dir, frameName(i)) });
       }
+      await assertClean(page, remote, scene);
 
       console.log(`  capture ${scene.id}-${vp.key} (${frames} frames, pan ${Math.round(span)}px)`);
     }
   } finally {
-    await page.close();
+    if (borrowed) {
+      // Hand the tab back the way we found it.
+      await page.setViewportSize(null).catch(() => {});
+    } else {
+      await page.close().catch(() => {});
+    }
     // Detach only — this is the reader's browser, not ours to close.
     await browser.close();
   }

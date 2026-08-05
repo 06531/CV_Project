@@ -22,7 +22,7 @@ export const SCENES = [
 
   // TDS eDOC (OTTO). The tour films a system we cannot boot locally, so it
   // attaches to a browser you have already signed in — see REMOTES.
-  { id: 'otto-tour', kind: 'remote', remote: 'otto', frames: 140 },
+  { id: 'otto-tour', kind: 'remote', remote: 'otto', frames: 140, crf: 27 },
   { id: 'otto-flow', kind: 'explainer', frames: 140 },
   { id: 'otto-control', kind: 'explainer', frames: 140 },
 ];
@@ -66,26 +66,55 @@ export const REMOTES = {
   otto: {
     cdp: 'http://localhost:9222',
     url: 'https://tlkboxuat.tradelinksig.com/scm-sms/home.do',
+    /** The app is a frameset; everything worth filming is in this one. */
+    frame: 'main-frame',
     /** The document grid has painted by the time this exists. */
-    settleSelector: 'table',
+    settleSelector: '.ui-jqgrid-bdiv',
+    /** The grid body scrolls, the document does not — pan this instead. */
+    scrollSelector: '.ui-jqgrid-bdiv',
+    /**
+     * Filmed at the aspect the scroll-world will show it at, so `object-cover`
+     * has nothing to crop. 1920x1080 lost the folder tree off the left edge on
+     * a 16:10 screen; a desktop app squeezed into a phone-width viewport lost
+     * half the grid off the right.
+     */
+    viewports: { desktop: { width: 1728, height: 1080 }, mobile: { width: 1200, height: 2133 } },
     /** Sanity check: if we are looking at the CAS login page, stop. */
     signedInText: 'Shipment Management',
-    /** Applied to every text node, in order. */
+    /** Applied to every text node in every frame, in order. */
     anonymise: [
       ['Oi-China', 'Test-China'],
       ['Oi China', 'Test-China'],
       ['Oi Bangladesh', 'Test Bangladesh'],
       ['Oi Turkey', 'Test Turkey'],
-      ['48968.TL', '10042.TL'],
-      ['48009.TL', '10042.TL'],
       ['New Light', 'Demo Trader'],
       ['newlight', 'demo'],
-      // Document numbers keep their shape, lose their value.
-      [/\b0\d{5}-(\d{4})\b/g, '900412-$1'],
-      [/\b0\d{5}-\d{6,}\b/g, '900412-123456'],
+      // Any party id, not just the ones this account happens to show.
+      [/\b\d{4,6}\.TL\b/g, '10042.TL'],
     ],
+    /**
+     * Digit runs this long or longer are rewritten to same-length nonsense.
+     * The named rules above cannot reach the party number buried inside a
+     * composite key like `3HKTLK000000000048968000005FNY`; this can.
+     */
+    maskDigits: 5,
+    /**
+     * Whole columns replaced, rather than values matched. A blocklist only
+     * catches the names you already know about, and this grid turned out to
+     * carry partner and customer names nobody listed. Cells are filled from
+     * these lists by row index, so the column still looks like data.
+     */
+    maskColumns: {
+      Office: ['Test HK', 'Test Shanghai', 'Test Dhaka', 'Test Izmir'],
+      'Customer Code': ['TST', 'DMO', 'EXM'],
+      'Party ID Name': ['Demo Trader', 'Demo Exports Ltd', 'Demo Logistics'],
+    },
     /** Nothing from this list may survive into a frame. */
-    forbidden: ['Oi-China', 'Oi China', 'Oi Bangladesh', 'Oi Turkey', '48968', '48009', 'newlight', 'New Light'],
+    forbidden: [
+      'Oi-China', 'Oi China', 'Oi Bangladesh', 'Oi Turkey', 'Oi ',
+      'MELCOSA', 'OAGN', 'MANTRA',
+      '48968', '48009', 'newlight', 'New Light',
+    ],
   },
 };
 
