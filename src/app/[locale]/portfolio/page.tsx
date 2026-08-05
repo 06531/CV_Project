@@ -55,7 +55,8 @@ export default async function PortfolioPage({ params }: PageProps<'/[locale]/por
             <Reveal key={project.slug} delay={index * 60} className={project.featured ? 'md:col-span-2' : ''}>
               <Link
                 href={`/portfolio/${project.slug}`}
-                className={`group grid h-full overflow-hidden rounded-lg border border-line bg-surface transition-colors hover:border-accent ${
+                data-spotlight
+                className={`group relative grid h-full overflow-hidden rounded-lg border border-line bg-surface transition-colors hover:border-accent ${
                   project.featured ? 'md:grid-cols-2' : ''
                 }`}
               >

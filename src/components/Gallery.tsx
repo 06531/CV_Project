@@ -80,7 +80,8 @@ export default function Gallery({ desktop, mobile }: { desktop: Shot[]; mobile: 
             <button
               type="button"
               onClick={() => setOpen(index)}
-              className="group block w-full overflow-hidden rounded-lg border border-line bg-surface text-left transition-colors hover:border-accent"
+              data-spotlight
+              className="group relative block w-full overflow-hidden rounded-lg border border-line bg-surface text-left transition-colors hover:border-accent"
             >
               <div
                 className={`relative overflow-hidden bg-surface-2 ${

@@ -49,6 +49,25 @@
   支援 `--force` / `--only=id,id`;clip 改用 id 命名(`/world/<id>.mp4`)
 - `scenes/scene.css` 抽走共用骨架,新場景只需寫自己嗰部分
 
+### 滑鼠特效
+- `src/components/PointerFx.tsx`(render `null`)—— 全站唯一嘅指標追蹤器,
+  一個 `pointermove` + rAF 合併,寫 `--px/--py`(視窗)同 `--cx/--cy`(hover 嗰張卡)。
+  只喺 `(hover:hover) and (pointer:fine)` **而且**唔係 `prefers-reduced-motion` 先啟用,
+  啟用時喺 `<html>` 落 `data-pointer="fine"`;所有 CSS 由呢個 attribute 開關,
+  觸控 / 減少動態嘅使用者連 listener 都唔會裝
+- **背景網格聚光燈**(`body::after`):一塊 520px 固定層用 `transform` 移動(合成器處理),
+  網格 `background-position` 反向補償,令線條同 `body::before` 嗰個靜態網格對齊 ——
+  否則會變成「多咗一個網格喺度飄」。**唔用全螢幕 mask**,嗰個做法每幀重繪成個視窗
+- **卡片聚光 + 邊框發光**(`[data-spotlight]`):`isolation: isolate` + `z-index: -1`,
+  令光暈畫喺卡片底色之上、文字之下(用正 z-index 就會冚住字)。
+  邊框環用 `mask-composite: exclude`,包咗 `@supports`,唔支援就淨係冇個環
+- 六處卡片掛咗 `data-spotlight`:portfolio 卡、skills、experience、education、
+  profile aside、gallery 格
+- 光暈強度 light / dark 分開寫(`--fx-halo/line/card/ring`)—— dark 個 accent 係光青色,
+  同一個百分比會刺好多
+- 實測:120 次連續 mouse move **冇 long task**;手機同 reduced-motion 兩邊
+  `body::after` 嘅 `content` 都係 `none`(層都冇建立)
+
 ### SEO
 - `src/app/sitemap.ts`(兩 locale × 6 條路徑,由 `routing.locales` + `PROJECTS` 生成)
 - `src/app/robots.ts`

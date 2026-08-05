@@ -26,6 +26,14 @@
   --muted: #5b6b7c;
   --accent: #0d7490;
   --accent-soft: rgba(13, 116, 144, 0.12);
+
+  /* Pointer effects. Written out per theme rather than mixed from --accent:
+     the dark accent is a bright cyan and needs noticeably weaker tints than
+     the light one to land at the same perceived strength. */
+  --fx-halo: rgba(13, 116, 144, 0.14);
+  --fx-line: rgba(13, 116, 144, 0.55);
+  --fx-card: rgba(13, 116, 144, 0.12);
+  --fx-ring: rgba(13, 116, 144, 0.7);
 }
 
 .dark {
@@ -37,6 +45,11 @@
   --muted: #8b98a9;
   --accent: #22d3ee;
   --accent-soft: rgba(34, 211, 238, 0.12);
+
+  --fx-halo: rgba(34, 211, 238, 0.1);
+  --fx-line: rgba(34, 211, 238, 0.24);
+  --fx-card: rgba(34, 211, 238, 0.11);
+  --fx-ring: rgba(34, 211, 238, 0.55);
 }
 
 html {
@@ -80,6 +93,99 @@ body::before {
     linear-gradient(to bottom, color-mix(in srgb, var(--line) 70%, transparent) 1px, transparent 1px);
   background-size: 64px 64px;
   mask-image: radial-gradient(ellipse 100% 55% at 50% 0%, #000 15%, transparent 75%);
+}
+
+/* ---------------------------------------------------------------- pointer fx
+   Two layers, both fed by `PointerFx` and both switched on by the
+   `data-pointer="fine"` attribute it sets — which it only ever sets when there
+   is a real mouse and the reader has not asked for reduced motion. */
+@media (hover: hover) and (pointer: fine) {
+  /* The backdrop glow: a patch of brighter, accent-tinted grid that follows
+     the cursor, so the faint grid behind the page appears to light up.
+
+     It is a fixed 520px tile moved with `transform`, not a full-screen element
+     with a moving mask — the mask version repaints the whole viewport on every
+     mouse move, this one is a composited layer. The grid's own
+     background-position is pushed back by the same amount so its lines stay
+     registered with the static grid in `body::before`; otherwise it reads as a
+     second grid sliding around rather than the page's own grid being lit. */
+  body::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 520px;
+    height: 520px;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 400ms ease-out;
+    background-image:
+      radial-gradient(circle at 50% 50%, var(--fx-halo), transparent 70%),
+      linear-gradient(to right, var(--fx-line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--fx-line) 1px, transparent 1px);
+    background-size: 100% 100%, 64px 64px, 64px 64px;
+    background-position:
+      center,
+      calc(260px - var(--px, 50vw)) calc(260px - var(--py, 50vh)),
+      calc(260px - var(--px, 50vw)) calc(260px - var(--py, 50vh));
+    -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 6%, transparent 66%);
+    mask-image: radial-gradient(circle at 50% 50%, #000 6%, transparent 66%);
+    transform: translate3d(calc(var(--px, 50vw) - 260px), calc(var(--py, 50vh) - 260px), 0);
+    will-change: transform;
+  }
+
+  html[data-pointer="fine"] body::after {
+    opacity: 1;
+  }
+
+  /* Card spotlight. `isolation` plus a negative z-index puts the glow above the
+     card's own background but below its text — a positive z-index would wash
+     the words out instead. */
+  [data-spotlight] {
+    isolation: isolate;
+  }
+
+  html[data-pointer="fine"] [data-spotlight]::before,
+  html[data-pointer="fine"] [data-spotlight]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 200ms ease-out;
+  }
+
+  html[data-pointer="fine"] [data-spotlight]::before {
+    background: radial-gradient(circle 260px at var(--cx, 50%) var(--cy, 50%), var(--fx-card), transparent 72%);
+  }
+
+  html[data-pointer="fine"] [data-spotlight]:hover::before {
+    opacity: 1;
+  }
+
+  /* The edge nearest the cursor lights up: paint the gradient over the whole
+     card, then mask everything except a 1px band around it. Optional — where
+     `mask-composite` is missing the fill above still does the work. */
+  @supports (mask-composite: exclude) or (-webkit-mask-composite: xor) {
+    html[data-pointer="fine"] [data-spotlight]::after {
+      padding: 1px;
+      background: radial-gradient(circle 220px at var(--cx, 50%) var(--cy, 50%), var(--fx-ring), transparent 65%);
+      -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask:
+        linear-gradient(#000 0 0) content-box exclude,
+        linear-gradient(#000 0 0);
+    }
+
+    html[data-pointer="fine"] [data-spotlight]:hover::after {
+      opacity: 1;
+    }
+  }
 }
 
 ::selection {
@@ -127,6 +233,7 @@ body::before {
 
 @media print {
   body::before,
+  body::after,
   .no-print {
     display: none !important;
   }

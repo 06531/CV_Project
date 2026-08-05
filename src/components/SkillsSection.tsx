@@ -11,7 +11,10 @@ export default function SkillsSection() {
       <div className="grid gap-4 sm:grid-cols-2">
         {SKILLS.map((group, index) => (
           <Reveal key={group.id} delay={index * 40}>
-            <div className="print-avoid-break h-full rounded-lg border border-line bg-surface p-4 sm:p-5">
+            <div
+              data-spotlight
+              className="print-avoid-break relative h-full rounded-lg border border-line bg-surface p-4 sm:p-5"
+            >
               <h3 className="font-mono text-xs uppercase tracking-[0.15em] text-accent">
                 {t(`groups.${group.id}`)}
               </h3>

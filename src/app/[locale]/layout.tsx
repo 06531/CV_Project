@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import PointerFx from '@/components/PointerFx';
 import SiteFooter from '@/components/SiteFooter';
 import SiteHeader from '@/components/SiteHeader';
 import ThemeProvider from '@/components/ThemeProvider';
@@ -60,6 +61,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<'/[
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
           <NextIntlClientProvider>
+            <PointerFx />
             <SiteHeader />
             <main className="flex-1">{children}</main>
             <SiteFooter />

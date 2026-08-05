@@ -43,7 +43,8 @@ export default function ExperienceSection() {
                     return (
                       <article
                         key={project.id}
-                        className="print-avoid-break rounded-lg border border-line bg-surface p-4 sm:p-5"
+                        data-spotlight
+                        className="print-avoid-break relative rounded-lg border border-line bg-surface p-4 sm:p-5"
                       >
                         <div className="flex flex-wrap items-start justify-between gap-2">
                           <h4 className="font-semibold tracking-tight">{p('name')}</h4>

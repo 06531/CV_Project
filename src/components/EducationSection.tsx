@@ -12,7 +12,10 @@ export default function EducationSection() {
       <div className="space-y-4">
         {EDUCATION.map((item) => (
           <Reveal key={item.id}>
-            <div className="print-avoid-break flex gap-4 rounded-lg border border-line bg-surface p-4 sm:p-5">
+            <div
+              data-spotlight
+              className="print-avoid-break relative flex gap-4 rounded-lg border border-line bg-surface p-4 sm:p-5"
+            >
               <GraduationCap className="mt-0.5 size-5 shrink-0 text-accent" aria-hidden />
               <div>
                 <p className="font-mono text-xs text-accent">{item.period}</p>

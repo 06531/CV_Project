@@ -11,7 +11,7 @@ export default function ProfileAside() {
     .join('');
 
   return (
-    <div className="sticky top-24 rounded-lg border border-line bg-surface p-5">
+    <div data-spotlight className="sticky top-24 rounded-lg border border-line bg-surface p-5">
       <div className="grid size-14 place-items-center rounded-md bg-accent-soft font-mono text-lg font-semibold text-accent">
         {initials}
       </div>
