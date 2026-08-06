@@ -1,6 +1,6 @@
 # CV 網站 — 進度
 
-**最後更新:** 2026-08-06(CMHK Kiosk 三幕解說 scroll-world)
+**最後更新:** 2026-08-06(CMHK Kiosk + Startie 各三幕解說 scroll-world;四個 project 全部有 world)
 **技術棧:** Next.js 16 (App Router) + React 19 + TypeScript + Tailwind CSS v4 + next-intl + next-themes
 
 ## 目標
@@ -136,6 +136,26 @@
   長 caption 會捐入去佢哋底下(`command()` 讀 `max-aspect-ratio: 3/4` 揀短版)
 - `src/data/world.ts` 加 `kiosk` key(1.8 / 1.8 / 1.5 vh);clip 合共 4.0MB
 
+### Startie 三幕(2026-08-06)
+- **素材:得返 CV 嗰四版**。三條路全部斷:
+  - `ems.s7yr0.com` / `api.s7yr0.com` 都 curl 唔到(`000`,連唔上,唔係 404)
+  - `~/Documents/event_project` 只得一個 `README.md`(git tree 就係得呢一個檔)
+  - GitHub remote `06531/event_management_project` —— `git ls-remote` 零個 ref = 空 repo
+- 但 `public/portfolio/startie-1..4.jpg` 入面料好足,三幕全部由嗰度讀返嚟:
+  - `startie-setup` —— 左邊十個設定區逐個剔綠(時程 / 報名 / 表單 / 內容 / 獎項 /
+    主題 / 選單 / FAQ / 主辦單位 / 佈告),右邊跟住換畫面:時區選擇 → 獎金自動加總 →
+    三個佈景主題 → 送審。送審之後 `In review` 轉橙 + 「locked while under review」
+  - `startie-money` —— 兩條收費線分開講:VIP1–4 置頂($200 / $400 / $700 / $900,3–10 日,
+    價錢係 super admin 設定)→ Stripe Checkout → 列表重排、中咗嗰個彈上第一;
+    另一條係課金解鎖報名欄位,FREE badge 換 PRO
+  - `startie-stack` —— 架構圖:Next.js(Recoil / immer / CKEditor 5 / i18next / MUI)↔
+    NestJS(MVC / JWT / MikroORM)↔ PostgreSQL,Stripe 同 S3 掛喺旁邊,
+    一粒 token 行過條脊骨再拐去 Stripe,最後三種身分逐個亮
+- **順手補返 `src/data/cv.ts` 個 tech list** —— 之前得 `RESTful API` 頂住,
+  但 CV 自己幅架構圖寫住 NestJS / MikroORM / PostgreSQL / JWT / S3 / 兩個 Vercel 部署
+- 排版:`startie-stack` 直度唔准 side node 換行,否則變五格直疊、超出 scrim 90px,
+  而且 Stripe 會夾喺 NestJS 同 PostgreSQL 中間,睇落好似 request 穿過佢
+
 ### SEO
 - `src/app/sitemap.ts`(兩 locale × 6 條路徑,由 `routing.locales` + `PROJECTS` 生成)
 - `src/app/robots.ts`
@@ -151,17 +171,12 @@
 
 ## 未做 / 下一步 ⬜
 
-- [ ] **Startie 嘅 scroll-world** —— 等素材(OTTO 同 CMHK Kiosk 已完成)。
-      放喺 `_material/<slug>/`(已 gitignore),三選一:
-      1. source code 路徑(最好,可以照 schedule 咁影真 UI)
-      2. 測試環境 URL + 帳號(⚠️ 只影假 / 測試資料,真實公司資料唔上網)
-      3. 高清截圖 / 錄影
-      冇料都做得 —— 照 `scenes/agents.html` 嗰套砌 HTML 解說段
+- [x] ~~四個 project 嘅 scroll-world~~ —— 全部做齊(schedule / otto / kiosk / startie)
 - [ ] **決定 schedule 一頁用邊間學校**:條片係 Starlight(淺色),相簿 18 張仍然係 ABC(深色)。
       三選一 —— 兩邊都轉 Starlight(要重影 18 張,但會失去 ABC 嗰啲報名資料)/
       條片轉返 ABC(舊 mp4 已經冇備份,要重拍)/ 維持而家咁,當「唔同學校唔同樣」嚟賣
 - [ ] 部署(Vercel),記住設 `NEXT_PUBLIC_SITE_URL`
-- [ ] `public/cv/Kevin_Wu_CV.pdf`(4.5MB)+ `public/world/`(~13MB,最重係 `otto-tour`
+- [ ] `public/cv/Kevin_Wu_CV.pdf`(4.5MB)+ `public/world/`(~17MB,最重係 `otto-tour`
       兩個 clip 佔 5.9MB —— 真 UI 截圖壓縮率遠差過解說段)要唔要壓細
 
 ## 已知問題 / 風險 ⚠️
@@ -182,7 +197,9 @@
   Starlight 嗰邊係 `8 sessions available` + `Free`。未決定兩邊點對齊
 - 兩幕交接嗰 ~140px scroll 會見到兩段字疊住淡入淡出,係 cross-dissolve,唔係 bug
 - 直度場景頂部喺每幕最尾會有約 9px 被 sticky header 遮到(board 有 ±13px 漂移)
-- `startie` 嘅 `ems.s7yr0.com` 已經連唔到;`otto` 嘅 `tds3.tradelinksig.com` 要 CAS 登入
+- `startie` 兩個 host(`ems.s7yr0.com` / `api.s7yr0.com`)已經完全連唔到,source code 亦冇存底 ——
+  `public/portfolio/startie-1..4.jpg` 嗰四版 CV 係僅存嘅記錄,唔好刪。
+  `otto` 嘅 `tds3.tradelinksig.com` 要 CAS 登入
 - ⚠️ **`next dev` 同 `next start` 共用 `.next/`** —— 兩個一齊行,dev 會覆蓋 production
   嘅 static chunks,`next start` 嗰邊個頁面就會 JS 404、component 唔 hydrate,
   scroll-world 完全唔郁但 **console 冇 error**。驗收之前先確認冇 `next dev` 行緊
