@@ -7,14 +7,15 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "assets": "npm run assets:pdf && npm run assets:schedule && npm run assets:world",
+    "assets": "npm run assets:pdf && npm run assets:cv && npm run assets:schedule && npm run assets:world",
     "assets:pdf": "node scripts/render-pdf-pages.mjs",
     "assets:schedule": "node scripts/capture-schedule.mjs",
     "assets:world": "npm run assets:world:capture && npm run assets:world:encode",
     "assets:world:capture": "node scripts/capture-world-frames.mjs",
     "assets:world:encode": "node scripts/encode-world-clips.mjs",
     "check:world": "node scripts/world-check.mjs .shots",
-    "shot": "node scripts/shot.mjs"
+    "shot": "node scripts/shot.mjs",
+    "assets:cv": "node scripts/compress-cv-pdf.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.28.0",
