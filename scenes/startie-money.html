@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>startie-money — scroll-world explainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="scene.css">
+<style>
+  /* Two things Stripe is charged for, and they are not the same thing: buying
+     a position in the listing, and buying a feature the free tier will not
+     give you. The prices themselves are a super-admin setting.
+     Shared shell lives in scene.css; only this scene's own layout is here. */
+  :root {
+    --s-vip: #d9822b;
+    --s-pro: #6b3fa0;
+    --stripe: #635bff;
+  }
+
+  #board { max-width: 780px; }
+
+  @media (min-aspect-ratio: 3/4) {
+    .body { padding: clamp(16px, 2.3vmin, 24px); }
+  }
+
+  .lane { margin-top: clamp(9px, 1.3vmin, 15px); }
+  .laneHead {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: clamp(9.5px, 1.02vmin, 12px);
+    color: var(--muted); text-transform: uppercase; letter-spacing: .06em;
+  }
+  .laneHead .n {
+    width: 15px; height: 15px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--accent-soft); color: var(--accent);
+    font-size: 9px; font-weight: 700;
+  }
+
+  /* ---- lane one: the four ad tiers ---- */
+  .tiers { margin-top: 7px; display: flex; gap: clamp(5px, .9vmin, 10px); }
+  .tier {
+    flex: 1; text-align: center;
+    border: 1.5px solid var(--line); border-radius: 8px;
+    padding: clamp(5px, .85vmin, 9px) 4px;
+    background: var(--surface);
+  }
+  .tier .name { font-family: var(--mono); font-weight: 700; font-size: clamp(10px, 1.1vmin, 13px); }
+  .tier .price { margin-top: 2px; font-size: clamp(10.5px, 1.15vmin, 14px); font-weight: 600; }
+  .tier .days { margin-top: 1px; font-size: clamp(8.5px, .92vmin, 10.5px); color: var(--muted); }
+  .tier .was { text-decoration: line-through; color: var(--muted); font-weight: 400; margin-right: 3px; }
+  .tier.is-on { border-color: var(--s-vip); background: color-mix(in srgb, var(--s-vip) 8%, var(--surface)); }
+  .tier.is-on .price { color: var(--s-vip); }
+
+  /* The prices are not hard-coded — a super admin sets them per tier. */
+  .setter {
+    margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-family: var(--mono); font-size: clamp(9px, .96vmin, 11px); color: var(--muted);
+  }
+  .setter .chip { padding: 3px 7px; }
+
+  /* ---- the checkout, and what it buys ---- */
+  .payRow { margin-top: 8px; display: flex; align-items: stretch; gap: clamp(8px, 1.4vmin, 18px); }
+  .checkout {
+    flex: none; width: clamp(120px, 17vmin, 158px);
+    border: 1px solid var(--line); border-radius: 8px;
+    background: var(--surface);
+    padding: clamp(6px, .95vmin, 10px);
+    font-size: clamp(8.5px, .95vmin, 11px);
+  }
+  .checkout .brand {
+    display: flex; align-items: center; gap: 5px;
+    font-family: var(--mono); font-weight: 700; color: var(--stripe);
+    font-size: 1.02em;
+  }
+  .checkout .brand .badge { width: 7px; height: 7px; border-radius: 2px; background: var(--stripe); }
+  .checkout .amount { margin-top: 5px; font-size: 1.5em; font-weight: 700; }
+  .checkout .line { margin-top: 5px; height: 6px; border-radius: 2px; background: var(--surface-2); }
+  .checkout .line.short { width: 62%; }
+  .checkout .pay {
+    margin-top: 7px; padding: 4px 0; border-radius: 4px;
+    background: var(--stripe); color: #fff; text-align: center; font-weight: 700;
+  }
+
+  /* The listing, which is the thing being bought. */
+  .listing { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  .row {
+    display: flex; align-items: center; gap: 7px;
+    padding: clamp(4px, .7vmin, 7px) clamp(6px, .95vmin, 10px);
+    border: 1px solid var(--line); border-radius: 7px;
+    background: var(--surface);
+    font-size: clamp(9px, .98vmin, 11.5px);
+  }
+  .row .thumb { width: 22px; height: 15px; border-radius: 3px; flex: none; }
+  .row .title { flex: 1; }
+  .row .pin {
+    font-family: var(--mono); font-size: .88em; font-weight: 700;
+    color: var(--s-vip); opacity: 0;
+  }
+  .row.is-pinned { border-color: var(--s-vip); box-shadow: 0 6px 18px -12px rgba(217, 130, 43, .8); }
+  .row.is-pinned .pin { opacity: 1; }
+  .t1 { background: linear-gradient(130deg, #b8c6d8, #7f93ad); }
+  .t2 { background: linear-gradient(130deg, #d8c0b8, #ad8c7f); }
+  .t3 { background: linear-gradient(130deg, #c2d8b8, #8dad7f); }
+
+  /* ---- lane two: the feature the free tier will not give you ---- */
+  .fields { margin-top: 7px; display: flex; flex-wrap: wrap; gap: 5px; }
+  .field {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 9px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--surface-2);
+    font-size: clamp(9px, .96vmin, 11.5px); color: var(--muted);
+  }
+  .field .plus { color: var(--muted); font-weight: 700; }
+  .field.locked { border-style: dashed; }
+  .field.locked .tag {
+    font-family: var(--mono); font-size: .82em; font-weight: 700;
+    padding: 1px 5px; border-radius: 3px;
+    background: color-mix(in srgb, var(--s-pro) 14%, transparent); color: var(--s-pro);
+  }
+  .field.unlocked { border-color: var(--s-pro); border-style: solid; color: var(--s-pro); font-weight: 600; }
+  .field.unlocked .tag { background: var(--s-pro); color: #fff; }
+
+  .planSwap {
+    margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 9px;
+    font-family: var(--mono); font-size: clamp(9.5px, 1.02vmin, 12px);
+  }
+  .plan {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 6px;
+    background: #2b2b2b; color: #fff;
+  }
+  .plan .tierName { font-weight: 700; }
+  .plan.free .tierName { color: #9c9c9c; }
+  .plan.pro .tierName { color: #ffd479; }
+  .planSwap .arrow { color: var(--muted); }
+
+  @media (max-aspect-ratio: 3/4) {
+    .lane { margin-top: 6px; }
+    .laneHead { font-size: 9.5px; }
+    .tiers { gap: 3px; }
+    .tier { padding: 3px 2px; }
+    .tier .days { font-size: 8px; }
+    .row { padding: 3px 7px; }
+    .planSwap { margin-top: 5px; }
+    .tier .name { font-size: 10px; }
+    .tier .price { font-size: 10px; }
+    .tier .days { font-size: 8.5px; }
+    .setter { display: none; }
+    /* Stacked: at 360px the checkout card and a three-row listing cannot share
+       a line and still be read. */
+    .payRow { flex-direction: column; gap: 6px; }
+    .checkout { width: 100%; display: flex; align-items: center; gap: 8px; font-size: 10px; }
+    .checkout .amount { margin-top: 0; font-size: 1.25em; }
+    .checkout .line { display: none; }
+    .checkout .pay { margin-top: 0; margin-left: auto; padding: 4px 12px; }
+    .row { font-size: 10px; }
+    .fields { gap: 4px; }
+    .field { font-size: 10px; padding: 3px 8px; }
+    /* Three of the six field chips are enough to make the point. */
+    .field.extra { display: none; }
+    .planSwap { margin-top: 7px; font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="board">
+    <div class="window">
+      <div class="titlebar">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="name">startie — plans &amp; checkout</span>
+      </div>
+      <div class="body">
+        <div class="prompt"><span class="sigil">$</span> <span id="typed"></span><span class="caret" id="caret"></span></div>
+
+        <div class="lane" id="lane1">
+          <div class="laneHead"><span class="n">1</span> buy a position in the listing</div>
+
+          <div class="tiers" id="tiers">
+            <div class="tier" id="tier0"><div class="name">VIP1</div><div class="price">$200</div><div class="days">3 days pinned</div></div>
+            <div class="tier" id="tier1"><div class="name">VIP2</div><div class="price">$400</div><div class="days">7 days pinned</div></div>
+            <div class="tier" id="tier2"><div class="name">VIP3</div><div class="price">$700</div><div class="days">10 days pinned</div></div>
+            <div class="tier" id="tier3"><div class="name">VIP4</div><div class="price"><span class="was">$1,000</span>$900</div><div class="days">10 days · top slot</div></div>
+          </div>
+
+          <div class="setter" id="setter">
+            <span class="chip">super admin sets each tier</span>
+            <span class="chip is-model">price · days · 10% off</span>
+          </div>
+
+          <div class="payRow">
+            <div class="checkout" id="checkout">
+              <div class="brand"><span class="badge"></span> stripe</div>
+              <div class="amount">HK$900</div>
+              <div class="line"></div>
+              <div class="line short"></div>
+              <div class="pay">Pay</div>
+            </div>
+
+            <div class="listing" id="listing">
+              <div class="row" id="row0"><span class="thumb t1"></span><span class="title">Poetry Contest</span><span class="pin">pinned</span></div>
+              <div class="row" id="row1"><span class="thumb t2"></span><span class="title">Online Fashion Contest</span><span class="pin">pinned</span></div>
+              <div class="row" id="row2"><span class="thumb t3"></span><span class="title">Street Photo Awards</span><span class="pin">pinned</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lane" id="lane2">
+          <div class="laneHead"><span class="n">2</span> buy a field the free tier will not give you</div>
+
+          <div class="fields" id="fields">
+            <span class="field"><span class="plus">+</span> Birthday</span>
+            <span class="field"><span class="plus">+</span> Address</span>
+            <span class="field extra"><span class="plus">+</span> Age range</span>
+            <span class="field extra"><span class="plus">+</span> ID number</span>
+            <span class="field extra"><span class="plus">+</span> Team info</span>
+            <span class="field locked" id="proField"><span class="plus">+</span> Custom field <span class="tag">PRO</span></span>
+          </div>
+
+          <div class="planSwap" id="planSwap">
+            <span class="plan free"><span>Online Fashion Contest</span><span class="tierName" id="tierName">FREE</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+  const seg = (p, from, to) => { const x = clamp((p - from) / (to - from), 0, 1); return x * x * (3 - 2 * x); };
+  const $ = (id) => document.getElementById(id);
+  const portrait = () => matchMedia('(max-aspect-ratio: 3/4)').matches;
+  const command = () => (portrait() ? 'two ways to charge' : 'two things Stripe is charging for');
+
+  const board = $('board'), typed = $('typed'), caret = $('caret');
+  const tiers = [0, 1, 2, 3].map((k) => $('tier' + k));
+  const rows = [0, 1, 2].map((k) => $('row' + k));
+  const checkout = $('checkout'), setter = $('setter');
+  const proField = $('proField'), planSwap = $('planSwap'), tierName = $('tierName');
+  const plan = planSwap.querySelector('.plan');
+
+  function reveal(el, t, lift) {
+    el.style.opacity = t;
+    el.style.transform = `translateY(${(1 - t) * (lift == null ? 12 : lift)}px)`;
+  }
+
+  let last = { i: 0, total: 2 };
+
+  window.__setFrame = function (i, total) {
+    last = { i, total };
+    const p = total > 1 ? clamp(i / (total - 1), 0, 1) : 0;
+
+    const text = command();
+    typed.textContent = text.slice(0, Math.round(seg(p, 0.01, 0.09) * text.length));
+    caret.style.opacity = p > 0.13 ? 0 : (Math.floor(p * 44) % 2 ? 0.25 : 1);
+
+    reveal($('lane1'), seg(p, 0.04, 0.14), 10);
+
+    // 0.08–0.30 — the four tiers, then the note that the prices are a setting
+    // rather than a constant.
+    tiers.forEach((el, k) => {
+      reveal(el, seg(p, 0.08 + k * 0.03, 0.19 + k * 0.03), 8);
+      el.classList.toggle('is-on', k === 3 && p > 0.30);
+    });
+    reveal(setter, seg(p, 0.24, 0.33), 6);
+
+    // 0.32–0.50 — checkout, paid.
+    reveal(checkout, seg(p, 0.32, 0.42), 10);
+    const paid = p > 0.50;
+    checkout.querySelector('.pay').textContent = paid ? 'Paid ✓' : 'Pay';
+    checkout.querySelector('.pay').style.background = paid ? 'var(--ok)' : 'var(--stripe)';
+
+    // 0.36–0.62 — the listing, and the re-order the money bought. `order` is
+    // what moves the row, so the DOM stays put and the frame stays a pure
+    // function of p.
+    rows.forEach((el, k) => {
+      reveal(el, seg(p, 0.36 + k * 0.03, 0.46 + k * 0.03), 8);
+      const pinned = k === 1 && paid;
+      el.classList.toggle('is-pinned', pinned);
+      el.style.order = String(pinned ? 0 : k + 1);
+    });
+
+    // 0.60–1.00 — the second lane: a field that costs money, and the badge
+    // that changes on the event once it is bought.
+    reveal($('lane2'), seg(p, 0.60, 0.70), 10);
+    const unlocked = p > 0.84;
+    proField.classList.toggle('locked', !unlocked);
+    proField.classList.toggle('unlocked', unlocked);
+    plan.classList.toggle('free', !unlocked);
+    plan.classList.toggle('pro', unlocked);
+    tierName.textContent = unlocked ? 'PRO' : 'FREE';
+    reveal(planSwap, seg(p, 0.74, 0.82), 8);
+
+    const settle = seg(p, 0.90, 1);
+    const scale = 1 + p * 0.045 - settle * 0.012;
+    board.style.transform = `translateY(${(0.5 - p) * 24}px) scale(${scale.toFixed(4)})`;
+
+    document.documentElement.dataset.frame = String(i);
+  };
+
+  window.__setFrame(0, 2);
+  window.addEventListener('resize', () => window.__setFrame(last.i, last.total));
+})();
+</script>
+</body>
+</html>

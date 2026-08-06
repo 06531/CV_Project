@@ -203,6 +203,21 @@
           "eyebrow": "Four units, twenty seconds",
           "title": "A kiosk that says when it dies",
           "body": "Every unit broadcasts its machine id on a twenty-second round, and each one is watching the others. Two silent rounds and it is painted red on every remaining screen — which, in a warehouse where the units are aisles apart, is the only way anyone finds out."
+        },
+        "startie-setup": {
+          "eyebrow": "Ten sections, then a reviewer",
+          "title": "An event nobody publishes alone",
+          "body": "Schedule, registration, form fields, content, awards, theme, menu, FAQ, organiser, announcements — each its own screen. Dates are held against the event's own time zone rather than the server's, and the prize pool adds itself up from however many awards you enter. Submitting hands it to a super admin, and the parts that matter lock until they answer."
+        },
+        "startie-money": {
+          "eyebrow": "Two charges, not one",
+          "title": "Buying a position, and buying a field",
+          "body": "One tier buys a spot at the top of the listing for a set number of days; the other unlocks the form fields the free plan will not give you. Both go through Stripe Checkout, and neither price is hard-coded — a super admin sets the amount, the days and the discount per tier."
+        },
+        "startie-stack": {
+          "eyebrow": "Two deployments, three roles",
+          "title": "Where the request actually goes",
+          "body": "A Next.js front end holding its state in Recoil, and a NestJS back end reaching PostgreSQL through MikroORM — deployed separately, talking over REST. Uploads go to S3, payments to Stripe, and the JWT is what makes the same endpoint answer a super admin, an event owner and an event joiner differently."
         }
       }
     },

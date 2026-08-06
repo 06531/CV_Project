@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>startie-setup — scroll-world explainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="scene.css">
+<style>
+  /* Ten settings sections, then a review that takes the event out of the
+     owner's hands. The dark rail is the product's own; everything around it
+     is the shared palette.
+     Shared shell lives in scene.css; only this scene's own layout is here. */
+  :root {
+    --s-ink: #2b2b2b;      /* the dashboard's own sidebar */
+    --s-brand: #e8477a;    /* Startie's mark */
+    --s-go: #6aa84f;       /* its confirm buttons */
+    --s-warn: #e8912f;
+  }
+
+  #board { max-width: 760px; }
+
+  @media (min-aspect-ratio: 3/4) {
+    .body { padding: clamp(16px, 2.3vmin, 24px); }
+  }
+
+  .appRow {
+    display: flex;
+    gap: clamp(10px, 1.6vmin, 18px);
+    margin-top: clamp(8px, 1.2vmin, 14px);
+    height: clamp(172px, 26vmin, 204px);
+  }
+
+  /* ---- the settings rail ---- */
+  .rail {
+    flex: none; width: clamp(128px, 18vmin, 168px);
+    background: var(--s-ink); border-radius: 9px;
+    padding: clamp(7px, 1vmin, 11px) 0;
+    overflow: hidden;
+    font-size: clamp(8.5px, 1.02vmin, 11px);
+  }
+  .railGroup {
+    padding: 0 clamp(8px, 1.1vmin, 12px);
+    margin: 6px 0 3px;
+    font-family: var(--mono); font-size: .86em;
+    letter-spacing: .06em; text-transform: uppercase;
+    color: #7d7d7d;
+  }
+  .railGroup:first-child { margin-top: 0; }
+  .railItem {
+    display: flex; align-items: center; gap: 6px;
+    padding: 1.5px clamp(8px, 1.1vmin, 12px);
+    color: #cfcfcf;
+  }
+  .railItem .tick { width: 9px; height: 9px; flex: none; stroke: var(--s-go); fill: none; stroke-width: 3.4; stroke-linecap: round; stroke-linejoin: round; }
+  .railItem.is-active { background: #3d3d3d; color: #fff; font-weight: 600; }
+  .railLabel, .railCount { display: none; }
+
+  /* ---- the panel the rail drives ---- */
+  .panel {
+    position: relative; flex: 1;
+    border: 1px solid var(--line); border-radius: 9px;
+    background: var(--surface);
+    overflow: hidden;
+    font-size: clamp(9px, 1.1vmin, 12px);
+  }
+  /* The rail's thirteen rows set the row height, and no single settings view
+     fills that, so each one is centred rather than left hanging off the top. */
+  .view {
+    position: absolute; inset: 0;
+    padding: clamp(9px, 1.3vmin, 14px);
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .viewHead { font-weight: 600; font-size: 1.12em; }
+  .viewNote { margin-top: .2em; font-size: .92em; color: var(--muted); }
+
+  .field { margin-top: .7em; }
+  .fieldLabel { font-size: .88em; color: var(--muted); }
+  .select, .stamp2 {
+    margin-top: .25em; padding: .4em .6em;
+    border: 1px solid var(--line); border-radius: .35em;
+    background: var(--surface-2);
+    font-family: var(--mono); font-size: .95em;
+  }
+  .select { display: flex; align-items: center; justify-content: space-between; }
+  .dates { margin-top: .55em; display: flex; gap: .45em; }
+  .dates > div { flex: 1; }
+
+  /* Awards — three rows, and a total nobody types. */
+  .award {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .38em .55em; margin-top: .32em;
+    border-radius: .35em; background: var(--surface-2);
+    font-size: .95em;
+  }
+  .award .amt { font-family: var(--mono); font-weight: 600; }
+  .pool {
+    margin-top: .5em;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .45em .55em;
+    border-radius: .35em;
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    background: var(--accent-soft);
+    color: var(--accent); font-weight: 700;
+  }
+  .pool .amt { font-family: var(--mono); }
+
+  /* Themes — three of them, and the one this event picked. */
+  .themes { margin-top: .6em; display: flex; gap: .45em; }
+  .theme { flex: 1; text-align: center; font-size: .88em; color: var(--muted); }
+  .theme .swatch {
+    height: 3.4em; border-radius: .35em; border: 2px solid var(--line);
+  }
+  .theme.is-on .swatch { border-color: var(--accent); }
+  .theme.is-on { color: var(--accent); font-weight: 700; }
+  .sw1 { background: linear-gradient(140deg, #e8f2e2, #b7d3a4); }
+  .sw2 { background: linear-gradient(140deg, #3b3b3b, #6d6d6d); }
+  .sw3 { background: linear-gradient(140deg, #2a1a4a, #7a4bb8); }
+
+  /* The status track, and the lock that lands on it mid-review. */
+  .track { margin-top: clamp(10px, 1.5vmin, 16px); display: flex; align-items: stretch; gap: 0; }
+  .stage {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px;
+    font-family: var(--mono); font-size: clamp(9px, .98vmin, 11.5px);
+    color: var(--muted); white-space: nowrap;
+  }
+  .stage .bar { width: 100%; height: 4px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); }
+  .stage.is-done .bar { background: var(--ok); border-color: transparent; }
+  .stage.is-done { color: var(--ok); font-weight: 700; }
+  .stage.is-hold .bar { background: var(--s-warn); border-color: transparent; }
+  .stage.is-hold { color: var(--s-warn); font-weight: 700; }
+
+  .lockRow { margin-top: clamp(8px, 1.2vmin, 14px); display: flex; justify-content: center; }
+  .lock {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 6px 13px; border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--s-warn) 45%, transparent);
+    background: color-mix(in srgb, var(--s-warn) 12%, transparent);
+    color: var(--s-warn);
+    font-family: var(--mono); font-weight: 700; font-size: clamp(10px, 1.08vmin, 13px);
+  }
+  .lock svg { width: 14px; height: 14px; stroke: var(--s-warn); fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
+  @media (max-aspect-ratio: 3/4) {
+    /* The rail's ten labels are the first thing that stops being legible, and
+       stacking rail beside panel at 360px leaves neither any width. The panel
+       is what carries the scene, so the rail becomes a counter above it. */
+    .appRow { flex-direction: column; gap: 7px; height: auto; margin-top: 6px; }
+    .rail {
+      width: 100%; display: flex; align-items: center; gap: 7px;
+      padding: 7px 10px; font-size: 10px;
+      border-radius: 8px;
+    }
+    /* Not even the active item: the panel's own heading already names the
+       section, and the two disagree by a beat while a view is dissolving. */
+    .railGroup, .railItem { display: none; }
+    .railLabel { display: inline; color: #cfcfcf; font-family: var(--mono); }
+    /* Left, not right: the site's progress pill and Skip button cover the
+       top-right corner of a phone frame, and a counter parked there ends up
+       underneath them. */
+    .railCount { display: inline; color: #8f8f8f; font-family: var(--mono); }
+    .panel { height: 168px; flex: none; font-size: 10px; }
+    .track { margin-top: 10px; }
+    .lockRow { margin-top: 9px; }
+    .lock { font-size: 10.5px; padding: 5px 11px; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="board">
+    <div class="window">
+      <div class="titlebar">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="name">startie — event dashboard</span>
+      </div>
+      <div class="body">
+        <div class="prompt"><span class="sigil">$</span> <span id="typed"></span><span class="caret" id="caret"></span></div>
+
+        <div class="appRow">
+          <div class="rail" id="rail"></div>
+
+          <div class="panel">
+            <!-- Schedule — the timezone picker that keeps dates honest when the
+                 API is hosted somewhere else. -->
+            <div class="view" id="viewSchedule">
+              <div class="viewHead">Schedule</div>
+              <div class="viewNote">dates are stored against the event's zone</div>
+              <div class="field">
+                <div class="fieldLabel">Time zone</div>
+                <div class="select"><span>Asia/Hong_Kong</span><span>▾</span></div>
+              </div>
+              <div class="dates">
+                <div><div class="fieldLabel">Opens</div><div class="stamp2">01/05 12:00</div></div>
+                <div><div class="fieldLabel">Closes</div><div class="stamp2">04/05 15:00</div></div>
+              </div>
+            </div>
+
+            <!-- Awards — add as many as you like; the pool adds itself up. -->
+            <div class="view" id="viewAwards">
+              <div class="viewHead">Awards</div>
+              <div class="viewNote">add as many as the event needs</div>
+              <div class="award" id="aw0"><span>1st place</span><span class="amt">HK$5,000</span></div>
+              <div class="award" id="aw1"><span>2nd place</span><span class="amt">HK$3,000</span></div>
+              <div class="award" id="aw2"><span>3rd place</span><span class="amt">HK$1,000</span></div>
+              <div class="pool"><span>Prize pool</span><span class="amt" id="pool">HK$0</span></div>
+            </div>
+
+            <!-- Theme — three profile templates, plus the cover upload. -->
+            <div class="view" id="viewTheme">
+              <div class="viewHead">Profile template</div>
+              <div class="viewNote">three to pick from, plus a cover image</div>
+              <div class="themes">
+                <div class="theme" id="th0"><div class="swatch sw1"></div>Green</div>
+                <div class="theme" id="th1"><div class="swatch sw2"></div>Modern</div>
+                <div class="theme" id="th2"><div class="swatch sw3"></div>Galaxy</div>
+              </div>
+            </div>
+
+            <!-- Review — the owner's hands come off. -->
+            <div class="view" id="viewReview">
+              <div class="viewHead">Submitted for review</div>
+              <div class="viewNote">a super admin approves or rejects</div>
+              <div class="award" style="margin-top:.8em"><span>Online Fashion Contest</span><span class="amt" id="verdict">pending</span></div>
+              <div class="field">
+                <div class="fieldLabel">Reviewer</div>
+                <div class="stamp2">super admin</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="track" id="track"></div>
+
+        <div class="lockRow">
+          <span class="lock" id="lock">
+            <!-- lucide: lock -->
+            <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            locked while under review
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+  const seg = (p, from, to) => { const x = clamp((p - from) / (to - from), 0, 1); return x * x * (3 - 2 * x); };
+  const band = (p, start, end, fade) => Math.min(seg(p, start, start + fade), 1 - seg(p, end, end + fade));
+  const $ = (id) => document.getElementById(id);
+  const portrait = () => matchMedia('(max-aspect-ratio: 3/4)').matches;
+  const command = () => (portrait() ? 'publish an event' : 'take an event from draft to published');
+
+  const board = $('board'), typed = $('typed'), caret = $('caret');
+
+  // The dashboard's own left-hand nav, in its own order. Each entry is the
+  // point in the clip at which that section is filled in.
+  const NAV = [
+    ['group', 'Event'],
+    ['item', 'Schedule', 0.30],
+    ['item', 'Registration', 0.35],
+    ['item', 'Form fields', 0.40],
+    ['group', 'Page'],
+    ['item', 'Content', 0.46],
+    ['item', 'Awards', 0.55],
+    ['item', 'Theme', 0.64],
+    ['item', 'Menu', 0.68],
+    ['item', 'FAQ', 0.71],
+    ['item', 'Organiser', 0.74],
+    ['group', 'Outreach'],
+    ['item', 'Announcements', 0.77],
+  ];
+  const TICK = '<svg class="tick" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
+  $('rail').innerHTML =
+    NAV.map(([kind, label]) =>
+      kind === 'group'
+        ? `<div class="railGroup">${label}</div>`
+        : `<div class="railItem">${TICK}<span>${label}</span></div>`,
+    ).join('') +
+    // Portrait collapses the rail to one line, which needs a name of its own:
+    // once every section is ticked there is no active item left to show.
+    '<span class="railLabel">event settings</span>' +
+    '<span class="railCount" id="railCount"></span>';
+  const navItems = Array.from(document.querySelectorAll('.railItem'));
+  const navAt = NAV.filter(([k]) => k === 'item').map(([, , at]) => at);
+  const railCount = $('railCount');
+
+  const views = ['viewSchedule', 'viewAwards', 'viewTheme', 'viewReview'].map($);
+  const VIEW_AT = [[0.20, 0.48], [0.48, 0.62], [0.62, 0.78], [0.78, 1.4]];
+
+  const awards = [$('aw0'), $('aw1'), $('aw2')];
+  const AMOUNTS = [5000, 3000, 1000];
+  const pool = $('pool'), themes = [$('th0'), $('th1'), $('th2')];
+  const verdict = $('verdict'), lock = $('lock');
+
+  const STAGES = ['Draft', 'In review', 'Published'];
+  $('track').innerHTML = STAGES.map((s) => `<div class="stage"><span class="bar"></span><span>${s}</span></div>`).join('');
+  const stageEls = Array.from($('track').children);
+
+  function reveal(el, t, lift) {
+    el.style.opacity = t;
+    el.style.transform = `translateY(${(1 - t) * (lift == null ? 12 : lift)}px)`;
+  }
+
+  let last = { i: 0, total: 2 };
+
+  window.__setFrame = function (i, total) {
+    last = { i, total };
+    const p = total > 1 ? clamp(i / (total - 1), 0, 1) : 0;
+
+    const text = command();
+    typed.textContent = text.slice(0, Math.round(seg(p, 0.01, 0.09) * text.length));
+    caret.style.opacity = p > 0.13 ? 0 : (Math.floor(p * 44) % 2 ? 0.25 : 1);
+
+    // The rail fills in top to bottom; the section being edited is highlighted,
+    // and the ones behind it keep a tick.
+    let doneCount = 0;
+    navItems.forEach((el, k) => {
+      const at = navAt[k];
+      const done = p >= at;
+      if (done) doneCount++;
+      reveal(el, seg(p, 0.06 + k * 0.012, 0.16 + k * 0.012), 6);
+      el.querySelector('.tick').style.opacity = done ? 1 : 0.12;
+      el.classList.toggle('is-active', !done && p >= at - 0.05);
+    });
+    // Portrait shows one line, so it needs the count spelled out.
+    railCount.textContent = `${doneCount} / ${navItems.length}`;
+
+    views.forEach((el, k) => { el.style.opacity = band(p, VIEW_AT[k][0], VIEW_AT[k][1], 0.03); });
+
+    // Awards: the pool is the sum of whatever has been entered so far — the
+    // point being that nobody types the total.
+    let sum = 0;
+    awards.forEach((el, k) => {
+      const t = seg(p, 0.50 + k * 0.025, 0.545 + k * 0.025);
+      reveal(el, t, 6);
+      if (t > 0.6) sum += AMOUNTS[k];
+    });
+    pool.textContent = `HK$${sum.toLocaleString('en-US')}`;
+
+    themes.forEach((el, k) => {
+      reveal(el, seg(p, 0.64 + k * 0.02, 0.69 + k * 0.02), 6);
+      el.classList.toggle('is-on', k === 1 && p > 0.72);
+    });
+
+    // Submitted, then held, then approved.
+    const submitted = p >= 0.80;
+    const approved = p >= 0.92;
+    verdict.textContent = approved ? 'approved' : 'pending';
+    verdict.style.color = approved ? 'var(--ok)' : 'var(--s-warn)';
+
+    stageEls[0].classList.toggle('is-done', p > 0.24);
+    stageEls[1].classList.toggle('is-hold', submitted && !approved);
+    stageEls[1].classList.toggle('is-done', approved);
+    stageEls[2].classList.toggle('is-done', approved);
+    stageEls.forEach((el, k) => { el.style.opacity = seg(p, 0.16 + k * 0.03, 0.26 + k * 0.03); });
+
+    lock.style.opacity = submitted && !approved ? seg(p, 0.80, 0.84) : (approved ? 1 - seg(p, 0.92, 0.95) : 0);
+
+    const settle = seg(p, 0.90, 1);
+    const scale = 1 + p * 0.045 - settle * 0.012;
+    board.style.transform = `translateY(${(0.5 - p) * 24}px) scale(${scale.toFixed(4)})`;
+
+    document.documentElement.dataset.frame = String(i);
+  };
+
+  window.__setFrame(0, 2);
+  window.addEventListener('resize', () => window.__setFrame(last.i, last.total));
+})();
+</script>
+</body>
+</html>

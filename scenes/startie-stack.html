@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>startie-stack — scroll-world explainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="scene.css">
+<style>
+  /* Two deployments and three services, and one request walking through them.
+     The roles matter as much as the boxes: the same endpoint answers three
+     different people differently.
+     Shared shell lives in scene.css; only this scene's own layout is here. */
+  :root { --stripe: #635bff; --s-pro: #6b3fa0; }
+
+  #board { max-width: 760px; }
+
+  @media (min-aspect-ratio: 3/4) {
+    .body { padding: clamp(16px, 2.3vmin, 24px); }
+  }
+
+  .diagram { position: relative; margin-top: clamp(10px, 1.5vmin, 18px); }
+  #wires path { opacity: .3; stroke-dasharray: 4 5; }
+  #token { fill: var(--accent); opacity: 0; }
+
+  .tierRow { display: flex; justify-content: center; gap: clamp(10px, 1.8vmin, 26px); }
+  .tierRow + .tierRow { margin-top: clamp(16px, 2.6vmin, 36px); }
+
+  .node {
+    position: relative;
+    border: 1px solid var(--line); border-radius: 10px;
+    background: var(--surface);
+    padding: clamp(7px, 1vmin, 12px) clamp(10px, 1.5vmin, 18px);
+    min-width: clamp(120px, 17vmin, 190px);
+    box-shadow: 0 10px 26px -20px rgba(15, 23, 32, .4);
+  }
+  .node.is-lead { border-color: var(--accent); box-shadow: 0 12px 30px -16px rgba(13, 116, 144, .5); }
+  .node__head { display: flex; align-items: center; gap: 8px; }
+  .node__head svg { width: 16px; height: 16px; flex: none; stroke: var(--accent); fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .node__name { font-family: var(--mono); font-weight: 700; font-size: clamp(11px, 1.22vmin, 14px); }
+  .node__libs { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
+  .node__libs .chip { font-size: clamp(8.5px, .92vmin, 10.5px); padding: 3px 6px; }
+
+  /* Which Vercel deployment a node belongs to. */
+  .host {
+    position: absolute; top: -8px; right: 9px;
+    font-family: var(--mono); font-size: clamp(7.5px, .8vmin, 9.5px);
+    padding: 1px 6px; border-radius: 999px;
+    background: var(--surface-2); border: 1px solid var(--line); color: var(--muted);
+  }
+
+  .node.stripe .node__head svg { stroke: var(--stripe); }
+  .node.stripe.is-lead { border-color: var(--stripe); }
+
+  /* The three people the JWT tells apart. */
+  .roles {
+    margin-top: clamp(12px, 1.9vmin, 24px);
+    display: flex; justify-content: center; gap: 6px; flex-wrap: wrap;
+  }
+  .role {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--surface-2);
+    font-family: var(--mono); font-size: clamp(9px, .98vmin, 11.5px); color: var(--muted);
+  }
+  .role .key { width: 11px; height: 11px; stroke: var(--muted); fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .role.is-on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+  .role.is-on .key { stroke: var(--accent); }
+
+  @media (max-aspect-ratio: 3/4) {
+    .diagram { margin-top: 8px; }
+    /* Keep the three rows. Letting the side nodes wrap onto their own line
+       makes five stacked boxes, which runs a good 90px past where the scrim
+       starts — and it puts Stripe in the middle of the spine, where the
+       request appears to pass through it. */
+    .tierRow { flex-wrap: nowrap; gap: 6px; }
+    .tierRow + .tierRow { margin-top: 13px; }
+    .node { flex: 1 1 auto; min-width: 0; padding: 6px 9px; }
+    .node.side { flex: 0 0 39%; }
+    .node__name { font-size: 11px; }
+    .node__libs { margin-top: 5px; gap: 3px; }
+    .node__libs .chip { font-size: 9px; padding: 2px 5px; }
+    .node__libs .chip.extra { display: none; }
+    .host { font-size: 8px; }
+    .roles { margin-top: 10px; gap: 4px; }
+    .role { font-size: 9.5px; padding: 3px 8px; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="board">
+    <div class="window">
+      <div class="titlebar">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="name">startie — architecture</span>
+      </div>
+      <div class="body">
+        <div class="prompt"><span class="sigil">$</span> <span id="typed"></span><span class="caret" id="caret"></span></div>
+
+        <div class="diagram" id="diagram">
+          <svg id="wires" class="wires" preserveAspectRatio="none">
+            <path id="seg0"></path><path id="seg1"></path><path id="seg2"></path>
+            <circle id="token" r="4.5" cx="-99" cy="-99"></circle>
+          </svg>
+
+          <div class="tierRow">
+            <div class="node" id="node0">
+              <span class="host">vercel · ems</span>
+              <div class="node__head">
+                <!-- lucide: layout-dashboard -->
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+                <span class="node__name">Next.js</span>
+              </div>
+              <div class="node__libs">
+                <span class="chip is-model">Recoil</span>
+                <span class="chip">immer</span>
+                <span class="chip">CKEditor 5</span>
+                <span class="chip extra">i18next</span>
+                <span class="chip extra">MUI</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="tierRow">
+            <div class="node" id="node1">
+              <span class="host">vercel · api</span>
+              <div class="node__head">
+                <!-- lucide: server -->
+                <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="8" rx="2"/><rect x="2" y="13" width="20" height="8" rx="2"/><path d="M6 7h.01M6 17h.01"/></svg>
+                <span class="node__name">NestJS</span>
+              </div>
+              <div class="node__libs">
+                <span class="chip">MVC</span>
+                <span class="chip is-model">JWT</span>
+                <span class="chip">MikroORM</span>
+              </div>
+            </div>
+
+            <div class="node side stripe" id="node3">
+              <div class="node__head">
+                <!-- lucide: credit-card -->
+                <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                <span class="node__name">Stripe</span>
+              </div>
+              <div class="node__libs">
+                <span class="chip">Checkout</span>
+                <span class="chip extra">webhook</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="tierRow">
+            <div class="node" id="node2">
+              <div class="node__head">
+                <!-- lucide: database -->
+                <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/></svg>
+                <span class="node__name">PostgreSQL</span>
+              </div>
+              <div class="node__libs"><span class="chip">relational</span></div>
+            </div>
+
+            <div class="node side" id="node4">
+              <div class="node__head">
+                <!-- lucide: image-up -->
+                <svg viewBox="0 0 24 24"><path d="M21 12V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h7"/><circle cx="9" cy="9" r="2"/><path d="m3 16 4-4 4 4"/><path d="M18 22v-6M15 19l3-3 3 3"/></svg>
+                <span class="node__name">S3</span>
+              </div>
+              <div class="node__libs"><span class="chip extra">covers</span><span class="chip">uploads</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="roles" id="roles">
+          <span class="role" id="role0"><svg class="key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m10.8 12.2 8.2-8.2M17 7l2 2M15 9l2 2"/></svg> super admin</span>
+          <span class="role" id="role1"><svg class="key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m10.8 12.2 8.2-8.2M17 7l2 2M15 9l2 2"/></svg> event owner</span>
+          <span class="role" id="role2"><svg class="key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m10.8 12.2 8.2-8.2M17 7l2 2M15 9l2 2"/></svg> event joiner</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+  const seg = (p, from, to) => { const x = clamp((p - from) / (to - from), 0, 1); return x * x * (3 - 2 * x); };
+  const $ = (id) => document.getElementById(id);
+  const portrait = () => matchMedia('(max-aspect-ratio: 3/4)').matches;
+  const command = () => (portrait() ? 'two deployments' : 'two deployments, one request');
+
+  const board = $('board'), typed = $('typed'), caret = $('caret');
+  // The spine the request walks: browser tier → API tier → database. Stripe and
+  // S3 hang off it rather than sitting on it.
+  const spine = [$('node0'), $('node1'), $('node2')];
+  const sides = [$('node3'), $('node4')];
+  const paths = [0, 1, 2].map((k) => $('seg' + k));
+  const token = $('token');
+  const roles = [0, 1, 2].map((k) => $('role' + k));
+
+  /** Two spine hops, plus the branch out to Stripe. Read from the laid-out
+      geometry so the portrait single column works without a second rule. */
+  function wirePaths() {
+    const seg2 = (a, b) => {
+      const ax = a.offsetLeft + a.offsetWidth / 2, ay = a.offsetTop + a.offsetHeight;
+      const bx = b.offsetLeft + b.offsetWidth / 2, by = b.offsetTop;
+      const mid = ay + (by - ay) * 0.5;
+      return `M ${ax} ${ay} C ${ax} ${mid}, ${bx} ${mid}, ${bx} ${by}`;
+    };
+    paths[0].setAttribute('d', seg2(spine[0], spine[1]));
+    paths[1].setAttribute('d', seg2(spine[1], spine[2]));
+    // NestJS ↔ Stripe sit on the same row, so join their facing edges.
+    const a = spine[1], b = sides[0];
+    if (Math.abs(b.offsetTop - a.offsetTop) < 8) {
+      const y = a.offsetTop + a.offsetHeight / 2;
+      paths[2].setAttribute('d', `M ${a.offsetLeft + a.offsetWidth} ${y} L ${b.offsetLeft} ${y}`);
+    } else {
+      paths[2].setAttribute('d', seg2(a, b));
+    }
+  }
+
+  function reveal(el, t, lift) {
+    el.style.opacity = t;
+    el.style.transform = `translateY(${(1 - t) * (lift == null ? 12 : lift)}px)`;
+  }
+
+  let last = { i: 0, total: 2 };
+
+  window.__setFrame = function (i, total) {
+    last = { i, total };
+    const p = total > 1 ? clamp(i / (total - 1), 0, 1) : 0;
+    wirePaths();
+
+    const text = command();
+    typed.textContent = text.slice(0, Math.round(seg(p, 0.01, 0.09) * text.length));
+    caret.style.opacity = p > 0.13 ? 0 : (Math.floor(p * 44) % 2 ? 0.25 : 1);
+
+    // 0.04–0.34 — the spine, then the two services hanging off it.
+    spine.forEach((el, k) => reveal(el, seg(p, 0.04 + k * 0.06, 0.18 + k * 0.06), 12));
+    sides.forEach((el, k) => reveal(el, seg(p, 0.22 + k * 0.05, 0.34 + k * 0.05), 10));
+
+    // 0.34–0.80 — one request walks browser → API → database, then the
+    // payment branches off to Stripe.
+    const walk = seg(p, 0.34, 0.72) * 2;
+    spine.forEach((el, k) => el.classList.toggle('is-lead', 1 - clamp(Math.abs(walk - k), 0, 1) > 0.4));
+
+    const branch = p > 0.74;
+    const idx = branch ? 2 : Math.min(1, Math.floor(walk));
+    const drawn = branch ? seg(p, 0.74, 0.88) : clamp(walk - idx, 0, 1);
+    const path = paths[idx];
+    paths.forEach((el, k) => { el.style.opacity = k < idx ? 0.3 : k === idx ? 0.14 + drawn * 0.18 : 0.1; });
+    const len = path.getTotalLength();
+    if (len > 0) {
+      const pt = path.getPointAtLength(len * drawn);
+      token.setAttribute('cx', pt.x);
+      token.setAttribute('cy', pt.y);
+      token.style.opacity = p > 0.35 && p < 0.92 ? 1 : 0;
+    }
+    sides[0].classList.toggle('is-lead', branch && p < 0.93);
+
+    // 0.62–1.00 — the same API, three different answers.
+    roles.forEach((el, k) => {
+      reveal(el, seg(p, 0.62 + k * 0.05, 0.74 + k * 0.05), 8);
+      // Each one lights in turn near the end — the JWT is what tells them apart.
+      const at = 0.80 + k * 0.055;
+      el.classList.toggle('is-on', p >= at && p < at + 0.055);
+    });
+
+    const settle = seg(p, 0.90, 1);
+    const scale = 1 + p * 0.045 - settle * 0.012;
+    board.style.transform = `translateY(${(0.5 - p) * 24}px) scale(${scale.toFixed(4)})`;
+
+    document.documentElement.dataset.frame = String(i);
+  };
+
+  window.__setFrame(0, 2);
+  window.addEventListener('resize', () => window.__setFrame(last.i, last.total));
+})();
+</script>
+</body>
+</html>

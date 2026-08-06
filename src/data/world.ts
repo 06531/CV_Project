@@ -69,6 +69,14 @@ export const PROJECT_WORLDS: Partial<Record<ProjectSlug, WorldScene[]>> = {
     scene('kiosk-desk', 'explainer', { scroll: 1.8, linger: 0.4 }),
     scene('kiosk-fleet', 'explainer', { scroll: 1.5, linger: 0.4 }),
   ],
+  // Explainers too, for a harder reason than the kiosks': both of Startie's
+  // deployments are gone and the repo was never pushed, so the four pages of
+  // the CV are the only surviving record of it.
+  startie: [
+    scene('startie-setup', 'explainer', { scroll: 1.8, linger: 0.4 }),
+    scene('startie-money', 'explainer', { scroll: 1.7, linger: 0.4 }),
+    scene('startie-stack', 'explainer', { scroll: 1.5, linger: 0.4 }),
+  ],
 };
 
 /** Seam dissolve width, in viewport heights. */

@@ -65,6 +65,14 @@ export const SCENES = [
   { id: 'kiosk-flow', kind: 'explainer', frames: 160 },
   { id: 'kiosk-desk', kind: 'explainer', frames: 150 },
   { id: 'kiosk-fleet', kind: 'explainer', frames: 140 },
+
+  // Startie. Nothing left to film: both deployments are gone (ems.s7yr0.com
+  // and api.s7yr0.com no longer resolve) and the repo was never pushed. These
+  // are drawn from the four CV pages, which carry the settings rail, the VIP
+  // tiers and a full architecture diagram between them.
+  { id: 'startie-setup', kind: 'explainer', frames: 160 },
+  { id: 'startie-money', kind: 'explainer', frames: 150 },
+  { id: 'startie-stack', kind: 'explainer', frames: 140 },
 ];
 
 /**

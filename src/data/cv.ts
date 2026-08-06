@@ -235,15 +235,25 @@ export const PROJECTS: Project[] = [
   {
     slug: 'startie',
     period: 'Client project',
+    // The back end and the infrastructure were missing here — the CV's own
+    // architecture diagram (page 9, `/portfolio/startie-4.jpg`) names all of
+    // them, and "RESTful API" was standing in for the lot.
     tech: [
       'Next.js (React)',
       'Recoil',
+      'immer',
+      'MUI',
       'react-hook-form',
       'ckeditor5-react',
       'react-timezone-select',
+      'i18next (zh / en)',
+      'NestJS',
+      'MikroORM',
+      'PostgreSQL',
+      'JWT',
       'Stripe Checkout',
-      'RESTful API',
-      'i18n (zh / en)',
+      'AWS S3',
+      'Vercel',
     ],
     images: [
       { src: '/portfolio/startie-1.jpg' },
