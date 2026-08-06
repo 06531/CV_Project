@@ -196,6 +196,22 @@
 - **macOS 內置 Quartz「Reduce File Size」做唔到呢件事** —— 經 PDFKit 套落去佢淨係
   重寫個檔、唔會重新編碼,出嚟 4.48MB,仲大過原檔。所以要 ghostscript(script 會自己檢查)
 
+### Keyframe 密度跟播放模式(2026-08-06)
+- **`public/world/` 18.1 → 10.9MB,質素零損失** —— 同一個 crf、同一解像度,淨係改 GOP
+- 點解得:內頁而家自動播,`AutoWorld` 用真 `video.play()`,**由頭到尾冇 seek**。
+  短 GOP(桌面每 8 格一個 keyframe)存在嘅唯一理由係「拖動要即時 seek」,
+  自動播嗰陣嗰啲多出嚟嘅 keyframe 就係純浪費
+- `scenes/manifest.mjs` 每幕加 `playback: 'scrub' | 'auto'`,encode script 照住揀 GOP
+  (scrub 8/4,auto 30/30)。而家 12 幕 auto、2 幕 scrub(`/portfolio` 個開場)
+- ⚠️ **`playback` 一定要同頁面對得上** —— 改 `WorldStage` 個 mode 就要一齊改呢度再重 encode,
+  否則 auto clip 畀人用手拖會喺手機度窒
+- `otto-tour` 4.27 → 1.76MB(佢一個就佔咗成個 saving 三分一)
+- 試過但唔用嘅路:
+  - **縮解像度**(1728 → 1440 寬)慳得多,但 jqGrid 右邊嗰欄文字明顯化開 —— 細字唔食得縮
+  - **`-preset veryslow`** 檔案細啲,但同一個 crf 反而糊過 `slow`;
+    佢啲心理視覺取捨(多 B-frame、adaptive quant)對高對比細字唔友好
+  - **手機版加 crf** —— 720 寬本身冇餘裕,31 → 35 明顯散
+
 ### SEO
 - `src/app/sitemap.ts`(兩 locale × 6 條路徑,由 `routing.locales` + `PROJECTS` 生成)
 - `src/app/robots.ts`
@@ -216,8 +232,7 @@
       三選一 —— 兩邊都轉 Starlight(要重影 18 張,但會失去 ABC 嗰啲報名資料)/
       條片轉返 ABC(舊 mp4 已經冇備份,要重拍)/ 維持而家咁,當「唔同學校唔同樣」嚟賣
 - [x] ~~部署(Vercel)~~ —— https://kevin-wu-cv.vercel.app,`NEXT_PUBLIC_SITE_URL` 唔使設(見上)
-- [x] ~~資產壓細~~ —— `public/world/` 25.7 → 18.1MB,`Kevin_Wu_CV.pdf` 4.28 → 1.67MB。
-      仲可以再榨嘅淨返 `otto-tour` 兩個 clip(4.3MB),真 UI 截圖壓縮率就係差過解說段
+- [x] ~~資產壓細~~ —— `public/world/` 25.7 → **10.9MB**,`Kevin_Wu_CV.pdf` 4.28 → 1.67MB
 
 ## 已知問題 / 風險 ⚠️
 - **`next dev` 唔會熱載入 `messages/*.json`** —— 改完文案見到 raw key 就係呢個原因,

@@ -9,12 +9,23 @@
 //
 // Frame sequences land in `.frames/<id>-<viewport>/`, clips in `public/world/`.
 // Both stages are idempotent — they skip what already exists unless `--force`.
+//
+// `playback` says how the finished clip is driven on the site, and the encoder
+// picks the keyframe density from it — a played clip never seeks, so it does
+// not pay for seeks. IT MUST MATCH THE PAGE. Today:
+//
+//   scrub  INTRO_WORLD  → /portfolio        (WorldStage default mode)
+//   auto   PROJECT_WORLDS → /portfolio/<slug> (WorldStage mode="auto")
+//
+// If a deck's mode changes in src/data/world.ts and the call site, change it
+// here too and re-encode — an 'auto' clip dragged by hand stutters on phones.
 
 /**
  * @typedef {{ at: string, frames: number, from?: string, to?: string }} Shot
  * @typedef {{ id: string, kind: 'app' | 'explainer' | 'remote', frames?: number,
  *             app?: string, shots?: Shot[], tailPx?: number,
- *             remote?: string, crf?: number }} SceneSpec
+ *             remote?: string, crf?: number,
+ *             playback?: 'scrub' | 'auto' }} SceneSpec
  */
 
 /** @type {SceneSpec[]} */
@@ -29,14 +40,17 @@ export const SCENES = [
   //
   // Most of these screens fit a desktop viewport whole, so the motion comes
   // from the cuts rather than the pans — which is the point. Every shot's
-  // length is a multiple of the desktop GOP (8) so each cut lands on a keyframe
-  // and scrubbing stays sharp across it; see scripts/encode-world-clips.mjs.
+  // length is a multiple of 8, which is what the desktop GOP was when this deck
+  // scrubbed: each cut landed on a keyframe. It plays rather than scrubs now,
+  // so that no longer buys anything — but it costs nothing either, and it is
+  // what makes the deck re-encodable as 'scrub' if it ever moves back.
   {
     // `crf` applies to both viewports. A screen recording of a real product
     // costs several times what a drawn board does at the same quality setting,
     // so the two real-UI scenes are dialled back further than the profile
     // default — see scripts/encode-world-clips.mjs.
     id: 'schedule-tour', kind: 'app', app: 'schedule', frames: 144, tailPx: 40, crf: 27,
+    playback: 'auto',
     shots: [
       // Many schools, one deployment — the tenancy claim, stated visually.
       { at: 'directory', frames: 24 },
@@ -53,30 +67,30 @@ export const SCENES = [
       { at: 'platform', frames: 24, to: '.admin-table' },
     ],
   },
-  { id: 'schedule-tenancy', kind: 'explainer', frames: 140 },
-  { id: 'schedule-booking', kind: 'explainer', frames: 140 },
+  { id: 'schedule-tenancy', kind: 'explainer', frames: 140, playback: 'auto' },
+  { id: 'schedule-booking', kind: 'explainer', frames: 140, playback: 'auto' },
 
   // TDS eDOC (OTTO). The tour films a system we cannot boot locally, so it
   // attaches to a browser you have already signed in — see REMOTES.
-  { id: 'otto-tour', kind: 'remote', remote: 'otto', frames: 140, crf: 31 },
-  { id: 'otto-flow', kind: 'explainer', frames: 140 },
-  { id: 'otto-control', kind: 'explainer', frames: 140 },
+  { id: 'otto-tour', kind: 'remote', remote: 'otto', frames: 140, crf: 31, playback: 'auto' },
+  { id: 'otto-flow', kind: 'explainer', frames: 140, playback: 'auto' },
+  { id: 'otto-control', kind: 'explainer', frames: 140, playback: 'auto' },
 
   // CMHK's warehouse kiosks. No tour: the app talks to two hard-coded intranet
   // hosts, half its screens only exist because a socket pushed something to
   // them, and two of its modules are native-only — so there is nothing to film
   // even with the source in hand. Drawn from the source instead.
-  { id: 'kiosk-flow', kind: 'explainer', frames: 160 },
-  { id: 'kiosk-desk', kind: 'explainer', frames: 150 },
-  { id: 'kiosk-fleet', kind: 'explainer', frames: 140 },
+  { id: 'kiosk-flow', kind: 'explainer', frames: 160, playback: 'auto' },
+  { id: 'kiosk-desk', kind: 'explainer', frames: 150, playback: 'auto' },
+  { id: 'kiosk-fleet', kind: 'explainer', frames: 140, playback: 'auto' },
 
   // Startie. Nothing left to film: both deployments are gone (ems.s7yr0.com
   // and api.s7yr0.com no longer resolve) and the repo was never pushed. These
   // are drawn from the four CV pages, which carry the settings rail, the VIP
   // tiers and a full architecture diagram between them.
-  { id: 'startie-setup', kind: 'explainer', frames: 160 },
-  { id: 'startie-money', kind: 'explainer', frames: 150 },
-  { id: 'startie-stack', kind: 'explainer', frames: 140 },
+  { id: 'startie-setup', kind: 'explainer', frames: 160, playback: 'auto' },
+  { id: 'startie-money', kind: 'explainer', frames: 150, playback: 'auto' },
+  { id: 'startie-stack', kind: 'explainer', frames: 140, playback: 'auto' },
 ];
 
 /**

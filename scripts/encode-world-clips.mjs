@@ -1,11 +1,19 @@
-// Encodes the captured frame sequences into scroll-scrubbable MP4s, one pair
-// (desktop + mobile) per scene in `scenes/manifest.mjs`.
+// Encodes the captured frame sequences into MP4s, one pair (desktop + mobile)
+// per scene in `scenes/manifest.mjs`.
 //
-// The one setting that matters is `-g 8` (a keyframe every 8 frames). Scrubbing
-// seeks constantly, and a seek costs "decode every frame since the last
-// keyframe" — at ffmpeg's default GOP of 250 that is up to 249 frames per seek,
-// which stutters badly on phones. Short GOPs trade ~3-5x file size for instant
-// seeks, so the clips are kept to a few seconds each.
+// The setting that matters is the GOP, and the right value depends on how the
+// scene is played — which is why every scene declares `playback`:
+//
+//   scrub  the reader drags it, so it seeks constantly, and a seek costs
+//          "decode every frame since the last keyframe". At ffmpeg's default
+//          GOP of 250 that is up to 249 frames per seek, which stutters badly
+//          on phones. A keyframe every 8 frames (4 on mobile) buys instant
+//          seeks for 3-5x the file size.
+//   auto   AutoWorld calls video.play(). There are no seeks at all, so every
+//          one of those extra keyframes is bytes nobody ever uses. A normal
+//          GOP costs nothing here and halves the file.
+//
+// Same CRF, same resolution either way — this is not a quality setting.
 //
 // Also emits a poster JPEG per scene: the scroll-world shows it until the video
 // paints its first real frame (and it is the only visual under reduced-motion).
@@ -39,9 +47,12 @@ const FPS = 30;
  * their own `crf` in scenes/manifest.mjs.
  */
 const PROFILES = [
-  { vp: 'desktop', suffix: '', scale: null, gop: 8, crf: 26 },
-  { vp: 'mobile', suffix: '-m', scale: '720:-2', gop: 4, crf: 28 },
+  { vp: 'desktop', suffix: '', scale: null, gop: 8, gopAuto: 30, crf: 26 },
+  { vp: 'mobile', suffix: '-m', scale: '720:-2', gop: 4, gopAuto: 30, crf: 28 },
 ];
+
+/** A scene that is only ever played, never dragged, does not need the seeks. */
+const gopFor = (scene, profile) => (scene.playback === 'auto' ? profile.gopAuto : profile.gop);
 
 function ffmpeg(args) {
   execFileSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', ...args], {
@@ -107,6 +118,8 @@ for (const scene of wanted) {
     const filters = ['scale=trunc(iw/2)*2:trunc(ih/2)*2'];
     if (profile.scale) filters.unshift(`scale=${profile.scale}`);
 
+    const gop = gopFor(scene, profile);
+
     ffmpeg([
       '-framerate', String(FPS),
       '-i', path.join(dir, '%04d.png'),
@@ -117,8 +130,8 @@ for (const scene of wanted) {
       // of a dense enterprise grid costs several times what a drawn explainer
       // does, for a beat that is on screen for less than one screen of scroll.
       '-crf', String(scene.crf ?? profile.crf),
-      '-g', String(profile.gop),
-      '-keyint_min', String(profile.gop),
+      '-g', String(gop),
+      '-keyint_min', String(gop),
       '-sc_threshold', '0',      // don't let scene detection stretch the GOP
       '-pix_fmt', 'yuv420p',
       '-movflags', '+faststart',
