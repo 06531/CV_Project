@@ -28,10 +28,19 @@ const only = onlyArg ? new Set(onlyArg.split(',')) : null;
 
 const FPS = 30;
 
-/** Per-viewport encode profile. `suffix` matches `src/data/world.ts`. */
+/**
+ * Per-viewport encode profile. `suffix` matches `src/data/world.ts`.
+ *
+ * The CRFs are set for what these clips actually are: flat, near-vector
+ * explainer boards, which x264 encodes almost for free. Dropping the desktop
+ * profile from 20 to 26 took a third off every explainer with no visible
+ * difference at 2x magnification on the smallest type in the scenes — the
+ * monospace chips. The real-UI captures do not behave the same way and carry
+ * their own `crf` in scenes/manifest.mjs.
+ */
 const PROFILES = [
-  { vp: 'desktop', suffix: '', scale: null, gop: 8, crf: 20 },
-  { vp: 'mobile', suffix: '-m', scale: '720:-2', gop: 4, crf: 23 },
+  { vp: 'desktop', suffix: '', scale: null, gop: 8, crf: 26 },
+  { vp: 'mobile', suffix: '-m', scale: '720:-2', gop: 4, crf: 28 },
 ];
 
 function ffmpeg(args) {

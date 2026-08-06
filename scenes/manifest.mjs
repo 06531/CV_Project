@@ -32,7 +32,11 @@ export const SCENES = [
   // length is a multiple of the desktop GOP (8) so each cut lands on a keyframe
   // and scrubbing stays sharp across it; see scripts/encode-world-clips.mjs.
   {
-    id: 'schedule-tour', kind: 'app', app: 'schedule', frames: 144, tailPx: 40,
+    // `crf` applies to both viewports. A screen recording of a real product
+    // costs several times what a drawn board does at the same quality setting,
+    // so the two real-UI scenes are dialled back further than the profile
+    // default — see scripts/encode-world-clips.mjs.
+    id: 'schedule-tour', kind: 'app', app: 'schedule', frames: 144, tailPx: 40, crf: 27,
     shots: [
       // Many schools, one deployment — the tenancy claim, stated visually.
       { at: 'directory', frames: 24 },
@@ -54,7 +58,7 @@ export const SCENES = [
 
   // TDS eDOC (OTTO). The tour films a system we cannot boot locally, so it
   // attaches to a browser you have already signed in — see REMOTES.
-  { id: 'otto-tour', kind: 'remote', remote: 'otto', frames: 140, crf: 27 },
+  { id: 'otto-tour', kind: 'remote', remote: 'otto', frames: 140, crf: 31 },
   { id: 'otto-flow', kind: 'explainer', frames: 140 },
   { id: 'otto-control', kind: 'explainer', frames: 140 },
 
