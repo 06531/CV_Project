@@ -1,6 +1,6 @@
 # CV 網站 — 進度
 
-**最後更新:** 2026-08-06(四個 project 全部有 world;clip 壓細 30%;首頁 scroll / 內頁自動播)
+**最後更新:** 2026-08-06(已上線 https://kevin-wu-cv.vercel.app;資產壓細;首頁 scroll / 內頁自動播)
 **技術棧:** Next.js 16 (App Router) + React 19 + TypeScript + Tailwind CSS v4 + next-intl + next-themes
 
 ## 目標
@@ -173,6 +173,29 @@
   - **解說段咁慳係因為佢哋近乎向量圖**;真 UI 截圖同一個 crf 貴幾倍,
     所以唔可以一個數字行天下
 
+### 部署(2026-08-06)
+- **上線咗:https://kevin-wu-cv.vercel.app**(Vercel project `06531s-projects/cv-project`)
+- **`NEXT_PUBLIC_SITE_URL` 結果唔使設** —— Vercel 自己派咗 `kevin-wu-cv.vercel.app`
+  做 production domain,`src/site.ts` 個 `VERCEL_PROJECT_PRODUCTION_URL` fallback
+  已經出到正確 URL(實測 sitemap / robots 兩邊都係佢)。**日後上自訂網域先要設**,
+  設咗就要記住跟住域名改,否則反而會 stale
+- `.vercelignore`:第一次 `vercel --prod` 死喺 "Upload aborted",因為 CLI 上緊
+  `.frames`(430MB)同 `_material`(578MB)。兩個雖然都喺 `.gitignore`,但明示咗最穩陣;
+  順便擋埋 `CV.pdf` 母版(網站只用 `public/cv/` 嗰份壓細版)
+- 實測 live:兩個 locale × 六條路徑全部 200、`/api/cv/download` 有 `attachment`、
+  clip 同 PDF 都 serve 到正確 size、project 頁自動播冇 page error
+
+### CV PDF 壓細(2026-08-06)
+- `public/cv/Kevin_Wu_CV.pdf` **4.28MB → 1.67MB(-61%)**,`scripts/compress-cv-pdf.mjs`
+  + `npm run assets:cv`
+- **母版 `CV.pdf` 唔郁** —— 佢同時係 `render-pdf-pages.mjs` 出相簿嗰七版嘅來源
+- 點解慳得咁多:91% 檔案係圖,而 180 張入面 **172 張係 FlateDecode(無損)** ——
+  設計軟件貼上去嘅截圖。轉 JPEG 200dpi / q85 就係嗰 61%
+- **文字層完全冇變**:抽出嚟嘅 text byte-identical(27,081 字元),因為版面文字係向量,
+  唔會經過圖片處理路徑
+- **macOS 內置 Quartz「Reduce File Size」做唔到呢件事** —— 經 PDFKit 套落去佢淨係
+  重寫個檔、唔會重新編碼,出嚟 4.48MB,仲大過原檔。所以要 ghostscript(script 會自己檢查)
+
 ### SEO
 - `src/app/sitemap.ts`(兩 locale × 6 條路徑,由 `routing.locales` + `PROJECTS` 生成)
 - `src/app/robots.ts`
@@ -192,9 +215,9 @@
 - [ ] **決定 schedule 一頁用邊間學校**:條片係 Starlight(淺色),相簿 18 張仍然係 ABC(深色)。
       三選一 —— 兩邊都轉 Starlight(要重影 18 張,但會失去 ABC 嗰啲報名資料)/
       條片轉返 ABC(舊 mp4 已經冇備份,要重拍)/ 維持而家咁,當「唔同學校唔同樣」嚟賣
-- [ ] 部署(Vercel),記住設 `NEXT_PUBLIC_SITE_URL`
-- [x] ~~`public/world/` 壓細~~ —— 25.7MB → 18.1MB。仲有 `public/cv/Kevin_Wu_CV.pdf`(4.5MB)
-      未壓;`otto-tour` 兩個 clip 仍然佔 4.3MB,真 UI 截圖壓縮率就係差過解說段
+- [x] ~~部署(Vercel)~~ —— https://kevin-wu-cv.vercel.app,`NEXT_PUBLIC_SITE_URL` 唔使設(見上)
+- [x] ~~資產壓細~~ —— `public/world/` 25.7 → 18.1MB,`Kevin_Wu_CV.pdf` 4.28 → 1.67MB。
+      仲可以再榨嘅淨返 `otto-tour` 兩個 clip(4.3MB),真 UI 截圖壓縮率就係差過解說段
 
 ## 已知問題 / 風險 ⚠️
 - **`next dev` 唔會熱載入 `messages/*.json`** —— 改完文案見到 raw key 就係呢個原因,
