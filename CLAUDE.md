@@ -65,6 +65,11 @@
   `node scripts/capture-world-frames.mjs --only=<id>` 再 `node scripts/encode-world-clips.mjs --only=<id>`
 - 場景 HTML 一定要係 `window.__setFrame(i, total)` 嘅純函數 —— 唔准用 CSS animation /
   timer / `Math.random()`,否則逐幀截圖唔可重現
+- `kind: 'app'` 嘅一幕係由 `shots[]` 剪出嚟:每段 `at` 指向 `capture-world-frames.mjs`
+  入面一個畫面食譜(登入步驟喺 `scripts/lib/schedule-app.mjs`),`from` / `to` 係取景窗。
+  每段 `frames` 要係 **8 嘅倍數**,咁每個切口先啱啱落喺 keyframe
+- 影 schedule 用 e2e DB `schedule_app_e2e`(會 dropdb 重建),UI 同示範資料一律英文;
+  新 demo 字串要加落 `scripts/lib/demo-en.mjs`,否則兩道 CJK 守尾門會拒絕拍
 - 改完 scroll-world 一定要跑 `npm run check:world`(桌面 + `mobile` 各一次)
 - 未入版本控制嘅專案素材放 `_material/<slug>/`(已 gitignore);
   **真實客戶 / 公司資料唔可以影上網**,只用假 data 或測試環境

@@ -152,7 +152,7 @@
         "schedule-tour": {
           "eyebrow": "真係做出嚟,唔係 mockup",
           "title": "呢個就係行緊嘅系統",
-          "body": "一間課程公司的對外頁面,真實運作中:品牌頁頭、內嵌地圖、當月課堂。React、Express、PostgreSQL,由頭到尾一手做。"
+          "body": "六個真實畫面,由對外嘅公司目錄,一路去到登入之後嘅管理後台。React、Express、PostgreSQL,由頭到尾一手做。"
         },
         "schedule-tenancy": {
           "eyebrow": "一套系統,多間學校",

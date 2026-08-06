@@ -152,7 +152,7 @@
         "schedule-tour": {
           "eyebrow": "Shipped, not mocked",
           "title": "This is the running product",
-          "body": "A school's public page, live: brand header, embedded map, the month's classes. React, Express and PostgreSQL, built end to end."
+          "body": "Six real screens, from the public directory to the admin behind the login. React, Express and PostgreSQL, built end to end."
         },
         "schedule-tenancy": {
           "eyebrow": "One deployment, many schools",

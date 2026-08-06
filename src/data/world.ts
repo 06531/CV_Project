@@ -49,8 +49,10 @@ export const INTRO_WORLD: WorldScene[] = [
 /** One deck per project, played at the top of its case study. */
 export const PROJECT_WORLDS: Partial<Record<ProjectSlug, WorldScene[]>> = {
   schedule: [
-    // Short: the product is real, here it is. Then get out of the way.
-    scene('schedule-tour', 'app', { scroll: 0.9, linger: 0.25 }),
+    // The product is real, here it is — six screens, cut rather than panned,
+    // from the public directory through to the platform admin. Longer than the
+    // single page it replaced, but still the shortest of the three.
+    scene('schedule-tour', 'app', { scroll: 1.3, linger: 0.25 }),
     scene('schedule-tenancy', 'explainer', { scroll: 1.7, linger: 0.4 }),
     scene('schedule-booking', 'explainer', { scroll: 1.7, linger: 0.4 }),
   ],

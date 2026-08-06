@@ -2,12 +2,20 @@
 //
 // `kind` decides the source:
 //   explainer  scenes/<id>.html, stepped through `window.__setFrame(i, total)`
-//   app        a real product booted locally, panned top to bottom
+//   app        a real product booted locally, cut from a list of `shots`;
+//              each names a screen defined in scripts/capture-world-frames.mjs
+//              and, optionally, the `from`/`to` slice of it to pan across
+//   remote     a system we cannot boot, filmed through a browser you signed in
 //
 // Frame sequences land in `.frames/<id>-<viewport>/`, clips in `public/world/`.
 // Both stages are idempotent — they skip what already exists unless `--force`.
 
-/** @typedef {{ id: string, kind: 'app' | 'explainer', frames?: number, app?: string }} SceneSpec */
+/**
+ * @typedef {{ at: string, frames: number, from?: string, to?: string }} Shot
+ * @typedef {{ id: string, kind: 'app' | 'explainer' | 'remote', frames?: number,
+ *             app?: string, shots?: Shot[], tailPx?: number,
+ *             remote?: string, crf?: number }} SceneSpec
+ */
 
 /** @type {SceneSpec[]} */
 export const SCENES = [
@@ -15,8 +23,32 @@ export const SCENES = [
   { id: 'agents', kind: 'explainer', frames: 160 },
   { id: 'agents-handoff', kind: 'explainer', frames: 160 },
 
-  // Multi-tenant course scheduling platform.
-  { id: 'schedule-tour', kind: 'app', app: 'schedule', frames: 140 },
+  // Multi-tenant course scheduling platform. Cut from six shots rather than
+  // panned down one page: the single page this used to film spent half the clip
+  // on a contact card and an embedded map, and never left the public site.
+  //
+  // Most of these screens fit a desktop viewport whole, so the motion comes
+  // from the cuts rather than the pans — which is the point. Every shot's
+  // length is a multiple of the desktop GOP (8) so each cut lands on a keyframe
+  // and scrubbing stays sharp across it; see scripts/encode-world-clips.mjs.
+  {
+    id: 'schedule-tour', kind: 'app', app: 'schedule', frames: 144, tailPx: 40,
+    shots: [
+      // Many schools, one deployment — the tenancy claim, stated visually.
+      { at: 'directory', frames: 24 },
+      // Starting at the calendar heading, so the contact card and the embedded
+      // map above it — half of what the old single-page pan showed — are never
+      // in frame.
+      { at: 'company', frames: 24, from: '.row-between' },
+      // What a parent actually does: read the class, take the seat.
+      { at: 'course', frames: 32 },
+      // Then the two sides behind a login — the school's, and the platform's.
+      { at: 'teacher-courses', frames: 24 },
+      { at: 'teacher-qr', frames: 16 },
+      // Ending on the companies table: four tenants, four slugs, one install.
+      { at: 'platform', frames: 24, to: '.admin-table' },
+    ],
+  },
   { id: 'schedule-tenancy', kind: 'explainer', frames: 140 },
   { id: 'schedule-booking', kind: 'explainer', frames: 140 },
 
@@ -26,28 +58,6 @@ export const SCENES = [
   { id: 'otto-flow', kind: 'explainer', frames: 140 },
   { id: 'otto-control', kind: 'explainer', frames: 140 },
 ];
-
-/**
- * Products we can boot locally to film. Each entry owns its own ports and
- * database so a capture never collides with — or writes to — your dev setup.
- */
-export const APPS = {
-  schedule: {
-    /** Relative to this repo's root. */
-    dir: '../schedule_project',
-    apiPort: 4100,
-    webPort: 5273,
-    /** The dev database — its light company theme is the look we want. */
-    database: 'schedule_app',
-    /** Page to pan down. */
-    path: '/c/abc-music',
-    /** Wait for these before the first frame. */
-    settleSelector: '.cal-grid, .course-grid',
-    locale: 'zh-TW',
-    /** Leave headroom at the bottom so the last frames aren't dead space. */
-    tailPx: 40,
-  },
-};
 
 /**
  * Systems we cannot boot locally, filmed through a browser you have already
@@ -83,6 +93,7 @@ export const REMOTES = {
     signedInText: 'Shipment Management',
     /** Applied to every text node in every frame, in order. */
     anonymise: [
+      ['43230.TL', 'Test001.TL'],
       ['Oi-China', 'Test-China'],
       ['Oi China', 'Test-China'],
       ['Oi Bangladesh', 'Test Bangladesh'],
@@ -113,7 +124,7 @@ export const REMOTES = {
     forbidden: [
       'Oi-China', 'Oi China', 'Oi Bangladesh', 'Oi Turkey', 'Oi ',
       'MELCOSA', 'OAGN', 'MANTRA',
-      '48968', '48009', 'newlight', 'New Light',
+      '48968', '48009', 'newlight', 'New Light', '43230'
     ],
   },
 };

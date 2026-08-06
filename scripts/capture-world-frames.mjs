@@ -6,20 +6,23 @@
 // no timing jitter, every frame reproducible.
 //
 //   explainer  scenes/<id>.html, stepped through window.__setFrame(i, total)
-//   app        a real product, booted locally and panned top to bottom
+//   app        a real product, booted locally and filmed in a series of shots
 //
-// App scenes boot the product on dedicated ports against its own database, so
-// they neither need your dev server running nor collide with it. Nothing is
-// ever written — the pass only scrolls and screenshots.
+// An app scene is cut from several shots — a named screen plus the slice of it
+// to pan across — so one scene can carry a reader from the public directory to
+// a signed-in dashboard instead of scrolling one page end to end. The product
+// boots on dedicated ports against schedule_project's own throwaway E2E
+// database (see scripts/lib/schedule-app.mjs), so it neither needs your dev
+// server running nor touches your dev data.
 //
 // Usage: node scripts/capture-world-frames.mjs [--force] [--only=id,id]
 
-import { spawn, execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
-import { APPS, DEFAULT_FRAMES, REMOTES, SCENES, VIEWPORTS } from '../scenes/manifest.mjs';
+import { DEFAULT_FRAMES, REMOTES, SCENES, VIEWPORTS } from '../scenes/manifest.mjs';
+import * as schedule from './lib/schedule-app.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FRAMES = path.join(root, '.frames');
@@ -27,42 +30,6 @@ const FRAMES = path.join(root, '.frames');
 const force = process.argv.includes('--force');
 const onlyArg = process.argv.find((a) => a.startsWith('--only='))?.split('=')[1];
 const only = onlyArg ? new Set(onlyArg.split(',')) : null;
-
-const children = [];
-
-function boot(name, cmd, args, opts) {
-  const child = spawn(cmd, args, { ...opts, stdio: ['ignore', 'pipe', 'pipe'] });
-  child.stdout.on('data', (d) => process.env.VERBOSE && process.stdout.write(`[${name}] ${d}`));
-  child.stderr.on('data', (d) => process.env.VERBOSE && process.stderr.write(`[${name}] ${d}`));
-  child.on('exit', (code) => code && console.error(`[${name}] exited with ${code}`));
-  children.push(child);
-  return child;
-}
-
-function shutdown() {
-  for (const child of children) {
-    if (child.killed) continue;
-    try {
-      process.kill(-child.pid, 'SIGTERM');
-    } catch {
-      child.kill('SIGTERM');
-    }
-  }
-}
-
-async function waitFor(url, label, timeoutMs = 90_000) {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    try {
-      const res = await fetch(url);
-      if (res.status < 500) return;
-    } catch {
-      /* not up yet */
-    }
-    await new Promise((r) => setTimeout(r, 500));
-  }
-  throw new Error(`${label} did not come up at ${url} within ${timeoutMs}ms`);
-}
 
 const outDir = (id, vp) => path.join(FRAMES, `${id}-${vp.key}`);
 const frameName = (i) => `${String(i + 1).padStart(4, '0')}.png`;
@@ -119,80 +86,138 @@ async function captureExplainer(browser, scene) {
 
 // -------------------------------------------------------------- app scenes
 
-/** Boots one product and keeps it up for every app scene that needs it. */
-async function bootApp(key) {
-  const app = APPS[key];
-  if (!app) throw new Error(`unknown app "${key}" in scenes/manifest.mjs`);
-  const dir = path.resolve(root, app.dir);
-  if (!existsSync(dir)) throw new Error(`${key} app not found at ${dir}`);
-  try {
-    execFileSync('pg_isready', { stdio: 'pipe' });
-  } catch {
-    throw new Error('PostgreSQL is not accepting connections — start Postgres.app and retry.');
-  }
+/**
+ * Which seeded school the tour follows. Each company picks its own visual
+ * template, so this choice decides the clip's whole palette: `starlight-dance`
+ * is the `studio` template — light, plum, serif headings — where `abc-music` is
+ * `stage`, which is dark purple. Every other clip on the site is light, so the
+ * tour follows a school that matches.
+ */
+const TENANT = {
+  slug: 'starlight-dance',
+  /** Beginner Ballet — the first course this school lists. */
+  courseId: 9,
+  owner: schedule.CREDENTIALS.owners['starlight-dance'],
+};
 
-  const base = `http://localhost:${app.webPort}`;
-  console.log(`Booting ${key} (${app.database}) on :${app.apiPort} / :${app.webPort} …`);
-  boot('api', 'npm', ['start'], {
-    cwd: path.join(dir, 'server'),
-    detached: true,
-    env: {
-      ...process.env,
-      PORT: String(app.apiPort),
-      PGDATABASE: app.database,
-      JWT_SECRET: 'cv-world-capture',
-      CLIENT_ORIGIN: base,
+/**
+ * Named screens a scene's `shots[].at` can ask for. Three of them need an
+ * account, which is why a shot names a recipe rather than a bare URL — the
+ * sign-in steps live in scripts/lib/schedule-app.mjs, shared with
+ * capture-schedule.mjs.
+ */
+const RECIPES = {
+  schedule: {
+    directory: async (page) => {
+      await page.goto(`${schedule.BASE}/`, { waitUntil: 'networkidle' });
+      await page.waitForSelector('.company-card', { timeout: 20_000 });
     },
-  });
-  boot('web', 'npx', ['vite', '--port', String(app.webPort), '--strictPort'], {
-    cwd: path.join(dir, 'client'),
-    detached: true,
-    env: { ...process.env, VITE_PROXY_TARGET: `http://localhost:${app.apiPort}` },
-  });
-  await waitFor(`http://localhost:${app.apiPort}/api/companies`, 'API');
-  await waitFor(base, 'web');
-  return base;
+    company: async (page) => {
+      await page.goto(`${schedule.BASE}/c/${TENANT.slug}`, { waitUntil: 'networkidle' });
+      await page.waitForSelector('.cal-grid', { timeout: 20_000 });
+    },
+    course: async (page) => {
+      await schedule.loginStudent(page);
+      await page.goto(`${schedule.BASE}/courses/${TENANT.courseId}`, { waitUntil: 'networkidle' });
+      await page.waitForSelector('.container .card', { timeout: 20_000 });
+    },
+    'teacher-courses': async (page) => {
+      await schedule.loginTeacher(page, TENANT.owner);
+      await schedule.openTab(page, schedule.TAB.courses);
+    },
+    'teacher-qr': async (page) => {
+      await schedule.loginTeacher(page, TENANT.owner);
+      await schedule.openTab(page, schedule.TAB.qr);
+      await page.waitForSelector('canvas, svg', { timeout: 20_000 });
+    },
+    platform: async (page) => {
+      await schedule.loginPlatform(page);
+    },
+  },
+};
+
+/**
+ * Where a shot's pan starts and stops, in document pixels.
+ *
+ * `from` and `to` are CSS selectors: the pan begins with `from`'s top at the
+ * top of the viewport and ends with `to`'s bottom at the bottom of it. Either
+ * may be omitted for "the top of the page" / "as far as it scrolls".
+ *
+ * This is what keeps unwanted parts of a page out of the film entirely: the
+ * company shot starts at the calendar heading, so the contact card and the
+ * embedded map above it are never in frame — no DOM surgery required.
+ */
+async function panWindow(page, shot, tailPx) {
+  return page.evaluate(
+    ([fromSel, toSel, tail]) => {
+      const max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+      const clamp = (n) => Math.min(Math.max(n, 0), max);
+      // A zero-height match counts as no match: the same markup can be laid out
+      // as a table on a desktop and hidden in favour of cards on a phone, and
+      // anchoring to the hidden one would pin the shot to the top of the page.
+      const el = (sel) => {
+        const found = sel ? document.querySelector(sel) : null;
+        return found && found.getBoundingClientRect().height > 0 ? found : null;
+      };
+
+      const fromEl = el(fromSel);
+      const toEl = el(toSel);
+      const start = clamp(fromEl ? fromEl.getBoundingClientRect().top + window.scrollY : 0);
+      const end = toEl
+        ? clamp(toEl.getBoundingClientRect().bottom + window.scrollY - window.innerHeight)
+        : clamp(max - tail);
+      return [start, Math.max(start, end)];
+    },
+    [shot.from ?? null, shot.to ?? null, tailPx ?? 0],
+  );
 }
 
-async function captureApp(browser, scene, base) {
-  const app = APPS[scene.app];
-  const frames = scene.frames ?? DEFAULT_FRAMES;
+async function captureApp(browser, scene) {
+  const recipes = RECIPES[scene.app];
+  if (!recipes) throw new Error(`unknown app "${scene.app}" in scenes/manifest.mjs`);
+  const shots = scene.shots ?? [];
+  const total = shots.reduce((n, s) => n + s.frames, 0);
+  const expected = scene.frames ?? DEFAULT_FRAMES;
+  if (total !== expected) {
+    throw new Error(`${scene.id}: shots add up to ${total} frames, but frames is ${expected}`);
+  }
 
   for (const vp of pending(scene)) {
     const dir = prepare(scene.id, vp);
     const context = await browser.newContext({
       viewport: { width: vp.width, height: vp.height },
       deviceScaleFactor: vp.dsf,
-      locale: app.locale,
-      extraHTTPHeaders: { 'Accept-Language': `${app.locale},zh;q=0.9` },
+      ...schedule.CONTEXT_LOCALE,
     });
     const page = await context.newPage();
-    await page.goto(`${base}${app.path}`, { waitUntil: 'networkidle' });
-    // Maps and calendars both settle a beat after load.
-    if (app.settleSelector) await page.waitForSelector(app.settleSelector, { timeout: 20_000 });
-    await page.waitForTimeout(2500);
 
-    // Kill the app's own entrance animation so frame 1 is already settled.
-    await page.addStyleTag({
-      content: '*,*::before,*::after{animation:none!important;transition:none!important}',
-    });
+    let i = 0;
+    for (const shot of shots) {
+      const recipe = recipes[shot.at];
+      if (!recipe) throw new Error(`${scene.id}: no "${shot.at}" screen for app "${scene.app}"`);
+      await recipe(page);
+      // Calendars and hero media settle a beat after the route resolves.
+      await page.waitForTimeout(2000);
+      await schedule.freeze(page);
+      await schedule.assertNoCjk(page, `${scene.id} → ${shot.at}`);
 
-    const travel = await page.evaluate(
-      () => document.documentElement.scrollHeight - window.innerHeight,
-    );
-    const span = Math.max(0, travel - (app.tailPx ?? 0));
-
-    for (let i = 0; i < frames; i++) {
-      const t = i / (frames - 1);
-      // Ease in/out so the pan starts and ends gently instead of jerking.
-      const eased = t * t * (3 - 2 * t);
-      await page.evaluate((y) => window.scrollTo(0, y), Math.round(span * eased));
-      await page.waitForTimeout(16);
-      await page.screenshot({ path: path.join(dir, frameName(i)) });
+      const [start, end] = await panWindow(page, shot, scene.tailPx);
+      for (let f = 0; f < shot.frames; f++) {
+        const t = shot.frames === 1 ? 1 : f / (shot.frames - 1);
+        // Ease in/out so the pan starts and ends gently instead of jerking.
+        const eased = t * t * (3 - 2 * t);
+        await page.evaluate((y) => window.scrollTo(0, y), Math.round(start + (end - start) * eased));
+        await page.waitForTimeout(16);
+        await page.screenshot({ path: path.join(dir, frameName(i++)) });
+      }
+      console.log(
+        `  shot    ${scene.id}-${vp.key} · ${shot.at} ` +
+          `(${shot.frames} frames, ${Math.round(start)}→${Math.round(end)}px)`,
+      );
     }
 
     await context.close();
-    console.log(`  capture ${scene.id}-${vp.key} (${frames} frames, pan ${Math.round(span)}px)`);
+    console.log(`  capture ${scene.id}-${vp.key} (${i} frames, ${shots.length} shots)`);
   }
 }
 
@@ -463,15 +488,22 @@ async function main() {
   if (rest.length === 0) return;
 
   const browser = await chromium.launch();
-  const booted = new Map();
+  let booted = false;
   try {
     for (const scene of rest) {
       if (scene.kind === 'explainer') {
         await captureExplainer(browser, scene);
         continue;
       }
-      if (!booted.has(scene.app)) booted.set(scene.app, await bootApp(scene.app));
-      await captureApp(browser, scene, booted.get(scene.app));
+      // One boot serves every app scene; the seed and the translation pass run
+      // with it, so the database is fresh for the whole capture. There is only
+      // one filmable product today — a second would need its own boot here to
+      // go with its own entry in RECIPES.
+      if (!booted) {
+        await schedule.bootApp();
+        booted = true;
+      }
+      await captureApp(browser, scene);
     }
   } finally {
     await browser.close();
@@ -479,17 +511,17 @@ async function main() {
 }
 
 process.on('SIGINT', () => {
-  shutdown();
+  schedule.shutdown();
   process.exit(130);
 });
 
 main()
   .then(() => {
-    shutdown();
+    schedule.shutdown();
     process.exit(0);
   })
   .catch((err) => {
     console.error(err.message || err);
-    shutdown();
+    schedule.shutdown();
     process.exit(1);
   });

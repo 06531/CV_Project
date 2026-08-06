@@ -1,6 +1,6 @@
 # CV 網站 — 進度
 
-**最後更新:** 2026-08-05(夜晚:scroll-world 改成每個 project 一疊 + SEO 收尾)
+**最後更新:** 2026-08-06(schedule-tour 重影:六段鏡頭剪接 + 全套英文)
 **技術棧:** Next.js 16 (App Router) + React 19 + TypeScript + Tailwind CSS v4 + next-intl + next-themes
 
 ## 目標
@@ -23,6 +23,7 @@
   `WorldStage` 管「一 session 播一次 + 重播」(取代舊 `PortfolioIntro`)
 - **重心放喺解說段**:schedule 現時三幕 = 1 短真 UI(`schedule-tour`)+ 2 解說
   (`schedule-tenancy` 多租戶 / QR,`schedule-booking` 報名→名額→老師課表→Stripe)
+
 - **`/portfolio` 開場由一幕變兩幕**(合共 4.0vh,舊版 1.8vh,慢咗一倍以上):
   `agents` = 九個角色排開 → dispatcher 揀角色 → 難度→model 對照表亮起選中嗰行;
   `agents-handoff` = developer 交棒 tester(有粒 token 行過去)→ 三項檢查逐項變綠 → 「ready to commit」
@@ -48,6 +49,31 @@
 - 資產 pipeline 泛化:`scenes/manifest.mjs` 做單一清單,capture / encode 兩個 script 照住行,
   支援 `--force` / `--only=id,id`;clip 改用 id 命名(`/world/<id>.mp4`)
 - `scenes/scene.css` 抽走共用骨架,新場景只需寫自己嗰部分
+
+### schedule-tour 重影(2026-08-06)
+- **由「一鏡直落一版」改成六段鏡頭剪接**(`scenes/manifest.mjs` 嘅 `shots`):
+  公司目錄 → 公司頁月曆 → 課程詳情/報名 → 老師後台課程表 → 公司 QR → 平台 admin。
+  舊版 140 格全部喺一版公司頁由頂掃到底,中段成半條片係聯絡資料卡 + Leaflet 地圖
+- **`shots[].from` / `to` 係取景窗**(CSS selector → document 座標)。公司頁由 `.row-between`
+  起鏡,所以上面嗰塊地圖**根本冇入鏡** —— 唔使改 DOM,淨係唔影佢
+- 大部分頁喺 1280×720 一版就裝得晒,所以**動感嚟自剪接而唔係 pan**。每段 frames 都係
+  桌面 GOP(8)嘅倍數,令每個切口啱啱落喺 keyframe,scrub 過切口唔會糊
+- 資料庫由 dev DB `schedule_app` 改用 **e2e seed DB `schedule_app_e2e`** —— 可重現,
+  而且同 `public/portfolio/schedule/` 嗰 18 張截圖同一套資料
+- **影 `starlight-dance` 而唔係 `abc-music`**:每間公司自己揀 template,ABC 用 `stage`
+  (深紫),Starlight 用 `studio`(米白 + 淡紫 + Playfair)。其他五幕都係淺色,
+  所以跟返淺色嗰間。改 `capture-world-frames.mjs` 個 `TENANT`(slug + 課程 id + 老師帳號)
+  一個地方就轉得晒;`loginTeacher(page, owner)` 收 owner,`CREDENTIALS.owners` 按 slug 排
+- **UI 切英文**,連 seed 出嚟嘅示範資料一齊(`scripts/lib/demo-en.mjs`):
+  seed 完即刻 `UPDATE` 一輪,`ABC 音樂教室` → `ABC Music Academy`、`兒童鋼琴入門` →
+  `Piano for Kids`,人名羅馬拼音對返 email。**唔係喺 DOM / 相片上加工**
+- 兩道守尾門:`assertDbEnglish()` 掃勻 DB 每個 text / jsonb 欄位,`assertNoCjk(page)`
+  每段開拍前掃畫面;仲有中文就拒絕拍
+- `scripts/lib/schedule-app.mjs`:seed / 英文化 / 開 API+Vite / 三種身分登入,
+  `capture-schedule.mjs` 同 `capture-world-frames.mjs` 共用(以前兩邊各抄一份)
+- 18 張相簿截圖亦一齊重影成英文(仍然影 ABC,見下面「已知問題」)
+- `src/data/world.ts` 嘅 `scroll` 0.9 → 1.3(六段鏡頭塞落 0.9vh 太快)
+- 檔案細咗:`schedule-tour.mp4` 3.4MB → 1.6MB,`-m` 2.5MB → 2.1MB
 
 ### 滑鼠特效
 - `src/components/PointerFx.tsx`(render `null`)—— 全站唯一嘅指標追蹤器,
@@ -107,18 +133,29 @@
       2. 測試環境 URL + 帳號(⚠️ 只影假 / 測試資料,真實公司資料唔上網)
       3. 高清截圖 / 錄影
       冇料都做得 —— 照 `scenes/agents.html` 嗰套砌 HTML 解說段
+- [ ] **決定 schedule 一頁用邊間學校**:條片係 Starlight(淺色),相簿 18 張仍然係 ABC(深色)。
+      三選一 —— 兩邊都轉 Starlight(要重影 18 張,但會失去 ABC 嗰啲報名資料)/
+      條片轉返 ABC(舊 mp4 已經冇備份,要重拍)/ 維持而家咁,當「唔同學校唔同樣」嚟賣
 - [ ] 部署(Vercel),記住設 `NEXT_PUBLIC_SITE_URL`
-- [ ] `git init` + 首次 commit(而家仲未係 git repo)
-- [ ] `public/cv/Kevin_Wu_CV.pdf`(4.5MB)+ `public/world/`(11MB,其中 `schedule-tour`
-      兩個 clip 就佔咗 6MB —— 佢係真 UI 截圖,壓縮率遠差過解說段)要唔要壓細
+- [ ] `public/cv/Kevin_Wu_CV.pdf`(4.5MB)+ `public/world/`(~9MB,最重係 `otto-tour`
+      兩個 clip 佔 5.9MB —— 真 UI 截圖壓縮率遠差過解說段)要唔要壓細
 
 ## 已知問題 / 風險 ⚠️
 - **`next dev` 唔會熱載入 `messages/*.json`** —— 改完文案見到 raw key 就係呢個原因,
   要重開 dev server;驗收用 `npx next start` 行 production build 最穩陣
 - `npm run assets:world` 入面 `schedule-tour` 要 PostgreSQL + `../schedule_project`;
   CI / Vercel **唔會**跑,所以 `public/world/` 同 `public/portfolio/` 必須入版本控制
-- **唔准改到 `../schedule_project` 任何檔案**(capture script 只讀、只 scroll)
-- 場景 clip 一律淺色;深色主題下係「白板 + 黑色漸層」嘅觀感,係刻意選擇(唔想 double 資產)
+- **唔准改到 `../schedule_project` 任何檔案**(capture script 只讀、只 scroll)。
+  但佢會 **`dropdb schedule_app_e2e` 再重新 seed**:`anglicise()` 改咗 `categories.name`
+  之後,人哋個 seed 認唔返「鋼琴」,唔重建就死。佢哋跑 `npm run e2e` = `seed && test`,
+  所以測試前一定 seed 返中文;**淨係跑 `npm run test`(唔 seed)先會炒**
+- 場景 clip 一律淺色;深色主題下係「白板 + 黑色漸層」嘅觀感,係刻意選擇(唔想 double 資產)。
+  **所以 `schedule-tour` 影 `starlight-dance` 而唔係 `abc-music`** —— 每間公司自己揀 template,
+  ABC 用 `stage`(深紫),Starlight 用 `studio`(米白 + 淡紫 + Playfair)。
+  轉租戶改 `capture-world-frames.mjs` 個 `TENANT` 一個地方就得
+- ⚠️ **條片係 Starlight,但 `public/portfolio/schedule/` 嗰 18 張相仍然係 ABC(深色)**。
+  ABC 好處係 seed 只喺佢嘅 Pop Piano 落咗報名資料(`Booked 2 / 8 sessions`、`$150 / session`),
+  Starlight 嗰邊係 `8 sessions available` + `Free`。未決定兩邊點對齊
 - 兩幕交接嗰 ~140px scroll 會見到兩段字疊住淡入淡出,係 cross-dissolve,唔係 bug
 - 直度場景頂部喺每幕最尾會有約 9px 被 sticky header 遮到(board 有 ±13px 漂移)
 - `startie` 嘅 `ems.s7yr0.com` 已經連唔到;`otto` 嘅 `tds3.tradelinksig.com` 要 CAS 登入
