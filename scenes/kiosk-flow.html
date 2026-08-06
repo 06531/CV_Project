@@ -26,17 +26,26 @@
      five short cards do not fill that, and the slack reads as a misalignment. */
   #board { max-width: 620px; }
 
+  /* A portrait device is the tallest thing any of these scenes holds, and the
+     board has to finish by ~66% of the frame — past that it runs under the
+     scroll-world's copy, which is laid over the bottom of the clip. So the
+     landscape chrome is tighter than the shared default. Portrait keeps
+     scene.css's own 12px; overriding it here unguarded would win on order. */
+  @media (min-aspect-ratio: 3/4) {
+    .body { padding: clamp(16px, 2.3vmin, 24px); }
+  }
+
   .stageRow {
     display: flex; align-items: center; justify-content: center;
     gap: clamp(16px, 3.4vmin, 40px);
-    margin-top: clamp(10px, 1.6vmin, 20px);
+    margin-top: clamp(8px, 1.2vmin, 14px);
   }
 
   /* ---- the unit ---- */
   .unit { display: flex; flex-direction: column; align-items: center; gap: 7px; flex: none; }
   .device {
     position: relative;
-    height: clamp(240px, 46vmin, 340px);
+    height: clamp(210px, 36vmin, 268px);
     aspect-ratio: 10 / 16;
     padding: 7px;
     border-radius: 16px;
@@ -149,9 +158,13 @@
   .unitFoot .slot { width: 46px; height: 5px; border-radius: 3px; background: var(--line); }
 
   /* ---- the rail beside it ---- */
-  .rail { display: flex; flex-direction: column; gap: clamp(6px, 1vmin, 11px); }
-  .rail .card { min-width: clamp(184px, 25vmin, 268px); padding: clamp(8px, 1.2vmin, 13px) clamp(12px, 1.7vmin, 20px); }
-  .rail .card__meta { margin-top: 6px; }
+  /* Five steps stacked are taller than the device beside them, so the rail —
+     not the unit — is what decides where the board ends. Hence the tight
+     padding: it is the cheapest 60px in the scene. */
+  .rail { display: flex; flex-direction: column; gap: clamp(3px, .55vmin, 7px); }
+  .rail .card { min-width: clamp(184px, 25vmin, 268px); padding: clamp(4px, .62vmin, 8px) clamp(10px, 1.5vmin, 16px); }
+  .rail .card__meta { margin-top: 4px; }
+  .rail .chip { padding: 4px 8px; }
 
   /* Portrait keeps the unit and drops the rail — the endpoint names are the
      first thing that stops being legible at 360px wide, and the scene's copy
