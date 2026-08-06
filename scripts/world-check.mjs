@@ -17,9 +17,13 @@ const MODE = process.argv[4] ?? 'desktop';
 mkdirSync(OUT, { recursive: true });
 
 const browser = await chromium.launch();
-const context = await browser.newContext(
-  MODE === 'mobile' ? { ...devices['iPhone 13'] } : { viewport: { width: 1440, height: 900 } },
-);
+const context = await browser.newContext({
+  ...(MODE === 'mobile' ? devices['iPhone 13'] : { viewport: { width: 1440, height: 900 } }),
+  // Headless Chromium reports `prefers-reduced-motion: reduce`, and ScrollWorld
+  // honours that by never building a <video> at all — so without this the check
+  // silently measures the poster fallback and reports no clips and no fade.
+  reducedMotion: 'no-preference',
+});
 const page = await context.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));

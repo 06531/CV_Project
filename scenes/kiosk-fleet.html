@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>kiosk-fleet — scroll-world explainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="scene.css">
+<style>
+  /* Four units on one socket, each shouting its machine id every twenty
+     seconds. Two missed rounds and the others paint it red — which is the only
+     way anyone finds out a kiosk in another aisle has dropped off the network.
+     Shared shell lives in scene.css; only this scene's own layout is here. */
+  :root {
+    --k-on: #4d9b1f;     /* #79ff2b on the unit's black status box, darkened
+                            here so it holds up on a white board */
+    --k-off: #e70000;
+    --k-idle: #9aa8b5;
+  }
+
+  #board { max-width: 720px; }
+
+  .fleet { position: relative; margin-top: clamp(12px, 2vmin, 24px); }
+  #wires path { stroke-width: 1.8; opacity: .28; stroke-dasharray: 4 5; }
+  #wires circle { fill: var(--accent); }
+
+  .units { display: flex; justify-content: center; gap: clamp(10px, 1.8vmin, 26px); }
+  .unit {
+    flex: 1 1 0; max-width: clamp(110px, 15vmin, 160px);
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  /* The unit's own status box: a thick rounded border that carries the colour,
+     exactly as checkStatus.tsx draws its 1 / 2 / G boxes. */
+  .box {
+    width: 100%; aspect-ratio: 5 / 4;
+    border: 3px solid var(--k-idle); border-radius: 10px;
+    background: #242424;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    color: var(--k-idle);
+  }
+  .box .glyph { font-family: var(--mono); font-size: clamp(15px, 2vmin, 24px); font-weight: 700; line-height: 1; }
+  .box .role { font-family: var(--mono); font-size: clamp(8px, .92vmin, 10.5px); opacity: .8; }
+  .miss {
+    font-family: var(--mono); font-size: clamp(8.5px, .95vmin, 11px);
+    color: var(--muted);
+  }
+  .miss.warn { color: var(--k-off); font-weight: 700; }
+
+  .hub {
+    /* Enough clearance that the four wires curve rather than skim the labels. */
+    margin: clamp(26px, 4vmin, 48px) auto 0;
+    width: fit-content;
+    display: flex; align-items: center; gap: 9px;
+    padding: 7px 15px;
+    border: 1px solid var(--line); border-radius: 999px;
+    background: var(--surface);
+    font-family: var(--mono); font-size: clamp(10px, 1.08vmin, 13px); color: var(--muted);
+    box-shadow: 0 10px 26px -20px rgba(15, 23, 32, .5);
+  }
+  .hub .live { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex: none; }
+
+  /* The twenty-second grid, as a strip with a playhead. */
+  .ticks { margin-top: clamp(14px, 2.2vmin, 26px); position: relative; }
+  .ticksBar { height: 3px; border-radius: 3px; background: var(--surface-2); border: 1px solid var(--line); }
+  .ticksMarks { display: flex; justify-content: space-between; margin-top: 6px; }
+  .ticksMarks span { font-family: var(--mono); font-size: clamp(9px, .98vmin, 11.5px); color: var(--muted); }
+  .playhead { position: absolute; top: -4px; width: 2px; height: 11px; border-radius: 2px; background: var(--accent); }
+
+  .verdict { margin-top: clamp(14px, 2.2vmin, 26px); display: flex; justify-content: center; gap: 7px; flex-wrap: wrap; }
+  .stamp {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 7px 14px; border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--k-off) 45%, transparent);
+    background: color-mix(in srgb, var(--k-off) 10%, transparent);
+    color: var(--k-off);
+    font-family: var(--mono); font-weight: 700; font-size: clamp(10.5px, 1.12vmin, 13.5px);
+  }
+  .stamp svg { width: 15px; height: 15px; stroke: var(--k-off); fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
+  @media (max-aspect-ratio: 3/4) {
+    .fleet { margin-top: 9px; }
+    /* Two by two: four boxes across a 360px frame leaves each one too small to
+       read the role line under the glyph. */
+    .units { flex-wrap: wrap; gap: 7px; }
+    .unit { flex: 1 1 calc(50% - 4px); max-width: none; }
+    .box { aspect-ratio: 16 / 6; flex-direction: row; gap: 7px; }
+    .box .glyph { font-size: 17px; }
+    .box .role { font-size: 10px; }
+    .miss { font-size: 10px; }
+    .hub { margin-top: 15px; font-size: 10.5px; padding: 6px 12px; }
+    .ticks { margin-top: 12px; }
+    .verdict { margin-top: 12px; }
+    .stamp { font-size: 11px; padding: 6px 11px; }
+    /* The recovery button is a detail; the failure is the point, and a second
+       stamp wraps to its own row that a phone frame cannot spare. */
+    #ping { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="board">
+    <div class="window">
+      <div class="titlebar">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="name">4 units · one socket</span>
+      </div>
+      <div class="body">
+        <div class="prompt"><span class="sigil">$</span> <span id="typed"></span><span class="caret" id="caret"></span></div>
+
+        <div class="fleet" id="fleet">
+          <svg id="wires" class="wires" preserveAspectRatio="none">
+            <path id="seg0"></path><path id="seg1"></path><path id="seg2"></path><path id="seg3"></path>
+            <circle id="tok0" r="3.6" cx="-99" cy="-99"></circle>
+            <circle id="tok1" r="3.6" cx="-99" cy="-99"></circle>
+            <circle id="tok2" r="3.6" cx="-99" cy="-99"></circle>
+            <circle id="tok3" r="3.6" cx="-99" cy="-99"></circle>
+          </svg>
+
+          <div class="units" id="units">
+            <div class="unit" id="unit0">
+              <div class="box" id="box0"><span class="glyph">1</span><span class="role">staff 1</span></div>
+              <span class="miss" id="miss0">0 missed</span>
+            </div>
+            <div class="unit" id="unit1">
+              <div class="box" id="box1"><span class="glyph">2</span><span class="role">staff 2</span></div>
+              <span class="miss" id="miss1">0 missed</span>
+            </div>
+            <div class="unit" id="unit2">
+              <div class="box" id="box2"><span class="glyph">G</span><span class="role">guest 1</span></div>
+              <span class="miss" id="miss2">0 missed</span>
+            </div>
+            <div class="unit" id="unit3">
+              <div class="box" id="box3"><span class="glyph">G</span><span class="role">guest 2</span></div>
+              <span class="miss" id="miss3">0 missed</span>
+            </div>
+          </div>
+
+          <div class="hub" id="hub">
+            <span class="live"></span> socket :3010 &nbsp;·&nbsp; <span id="hubText">checkStatusOn</span>
+          </div>
+
+          <div class="ticks" id="ticks">
+            <div class="ticksBar"></div>
+            <div class="playhead" id="playhead"></div>
+            <div class="ticksMarks">
+              <span>0s</span><span>20s</span><span>40s</span><span>60s</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="verdict">
+          <span class="stamp" id="stamp">
+            <!-- lucide: wifi-off -->
+            <svg viewBox="0 0 24 24"><path d="M2 2l20 20"/><path d="M8.5 16.4a5 5 0 0 1 7 0"/><path d="M5 12.9a10 10 0 0 1 5.2-2.7M19.7 12.9a10 10 0 0 0-3.4-2.3"/><path d="M2 8.8a16 16 0 0 1 4.7-2.8M22 8.8a16 16 0 0 0-11-3.6"/><path d="M12 20h.01"/></svg>
+            guest 2 · connection fail
+          </span>
+          <span class="stamp" id="ping" style="border-color: var(--line); background: var(--surface-2); color: var(--muted)">pingGuest.do</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  // The site's progress pill and Skip button sit over the top-right of a phone
+  // frame, so the portrait caption has to stop short of them.
+  const command = () =>
+    matchMedia('(max-aspect-ratio: 3/4)').matches
+      ? 'who is still alive?'
+      : 'who is still on the network?';
+  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+  const seg = (p, from, to) => { const x = clamp((p - from) / (to - from), 0, 1); return x * x * (3 - 2 * x); };
+  const $ = (id) => document.getElementById(id);
+
+  const board = $('board'), typed = $('typed'), caret = $('caret');
+  const units = [0, 1, 2, 3].map((k) => $('unit' + k));
+  const boxes = [0, 1, 2, 3].map((k) => $('box' + k));
+  const misses = [0, 1, 2, 3].map((k) => $('miss' + k));
+  const paths = [0, 1, 2, 3].map((k) => $('seg' + k));
+  const tokens = [0, 1, 2, 3].map((k) => $('tok' + k));
+  const hub = $('hub'), hubText = $('hubText'), ticks = $('ticks');
+  const playhead = $('playhead'), stamp = $('stamp'), ping = $('ping');
+
+  /** Each unit down to the hub. Portrait wraps the units to a 2x2, so read the
+      geometry rather than a media query. */
+  function wirePaths() {
+    const hx = hub.offsetLeft + hub.offsetWidth / 2;
+    const hy = hub.offsetTop;
+    units.forEach((u, k) => {
+      const x = u.offsetLeft + u.offsetWidth / 2;
+      const y = u.offsetTop + u.offsetHeight;
+      const mid = y + (hy - y) * 0.55;
+      paths[k].setAttribute('d', `M ${x} ${y} C ${x} ${mid}, ${hx} ${mid}, ${hx} ${hy}`);
+    });
+  }
+
+  function reveal(el, t, lift) {
+    el.style.opacity = t;
+    el.style.transform = `translateY(${(1 - t) * (lift == null ? 14 : lift)}px)`;
+  }
+
+  let last = { i: 0, total: 2 };
+
+  window.__setFrame = function (i, total) {
+    last = { i, total };
+    const p = total > 1 ? clamp(i / (total - 1), 0, 1) : 0;
+    wirePaths();
+
+    // 0.00–0.09 — the caption types itself out.
+    const text = command();
+    typed.textContent = text.slice(0, Math.round(seg(p, 0.01, 0.09) * text.length));
+    caret.style.opacity = p > 0.13 ? 0 : (Math.floor(p * 44) % 2 ? 0.25 : 1);
+
+    // 0.04–0.26 — the four units, then the socket they all hold open.
+    units.forEach((u, k) => reveal(u, seg(p, 0.04 + k * 0.04, 0.16 + k * 0.04), 12));
+    reveal(hub, seg(p, 0.20, 0.30), 10);
+    reveal(ticks, seg(p, 0.26, 0.36), 8);
+
+    // The clock. Linear, not eased — the whole point is that the interval is
+    // even. `beat` counts twenty-second rounds; 0 through ~3.4.
+    const beat = clamp((p - 0.28) / 0.60, 0, 1) * 3.4;
+    playhead.style.left = `${clamp(beat / 3, 0, 1) * 100}%`;
+    playhead.style.opacity = seg(p, 0.26, 0.36);
+
+    // Unit 4 stops reporting after the first round. Every other unit keeps
+    // posting its machine id, offset a little so the pulses do not march in
+    // lockstep — four units on four wires, not one animation played four times.
+    const ALIVE_UNTIL = [9, 9, 9, 1.05];
+    paths.forEach((path, k) => {
+      const wireIn = seg(p, 0.24 + k * 0.03, 0.34 + k * 0.03);
+      path.style.opacity = wireIn * 0.3;
+      const phase = beat - k * 0.09;
+      const live = phase > 0 && beat < ALIVE_UNTIL[k];
+      const len = path.getTotalLength();
+      if (live && len > 0) {
+        const pt = path.getPointAtLength(len * (phase % 1));
+        tokens[k].setAttribute('cx', pt.x);
+        tokens[k].setAttribute('cy', pt.y);
+        tokens[k].style.opacity = wireIn;
+      } else {
+        tokens[k].style.opacity = 0;
+      }
+    });
+
+    // What each unit's neighbours think of it. A round with no word from a unit
+    // bumps its counter; two of those and it is painted red.
+    boxes.forEach((box, k) => {
+      const heard = beat < ALIVE_UNTIL[k];
+      const missed = heard ? 0 : clamp(Math.floor(beat - ALIVE_UNTIL[k] + 1), 0, 2);
+      const colour = beat < 0.35 ? 'var(--k-idle)' : missed >= 2 ? 'var(--k-off)' : 'var(--k-on)';
+      box.style.borderColor = colour;
+      box.style.color = colour;
+      misses[k].textContent = `${missed} missed`;
+      misses[k].classList.toggle('warn', missed >= 2);
+    });
+
+    hubText.textContent = beat < 0.35 ? 'checkStatusOn' : `round ${Math.min(3, Math.floor(beat) + 1)} of 20s`;
+
+    // Only once the counter has actually reached two.
+    const failed = seg(p, 0.86, 0.93);
+    stamp.style.opacity = failed;
+    stamp.style.transform = `scale(${(0.92 + failed * 0.08).toFixed(4)})`;
+    ping.style.opacity = seg(p, 0.91, 0.98);
+
+    // Continuous slow push-in so no stretch of the clip is a frozen frame.
+    const settle = seg(p, 0.90, 1);
+    const scale = 1 + p * 0.045 - settle * 0.012;
+    board.style.transform = `translateY(${(0.5 - p) * 24}px) scale(${scale.toFixed(4)})`;
+
+    document.documentElement.dataset.frame = String(i);
+  };
+
+  window.__setFrame(0, 2);
+  window.addEventListener('resize', () => window.__setFrame(last.i, last.total));
+})();
+</script>
+</body>
+</html>

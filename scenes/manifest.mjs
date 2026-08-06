@@ -57,6 +57,14 @@ export const SCENES = [
   { id: 'otto-tour', kind: 'remote', remote: 'otto', frames: 140, crf: 27 },
   { id: 'otto-flow', kind: 'explainer', frames: 140 },
   { id: 'otto-control', kind: 'explainer', frames: 140 },
+
+  // CMHK's warehouse kiosks. No tour: the app talks to two hard-coded intranet
+  // hosts, half its screens only exist because a socket pushed something to
+  // them, and two of its modules are native-only — so there is nothing to film
+  // even with the source in hand. Drawn from the source instead.
+  { id: 'kiosk-flow', kind: 'explainer', frames: 160 },
+  { id: 'kiosk-desk', kind: 'explainer', frames: 150 },
+  { id: 'kiosk-fleet', kind: 'explainer', frames: 140 },
 ];
 
 /**

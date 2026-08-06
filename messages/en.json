@@ -188,6 +188,21 @@
           "eyebrow": "Who may touch it, and what it is called",
           "title": "Permissions and numbers, by rule",
           "body": "Rights are granted down an account → team → role tree, so an operator can draft but not delete. Document numbers come from a rule — prefix, zero-padded counter, check digit — and the interesting part is what happens when the counter runs out."
+        },
+        "kiosk-flow": {
+          "eyebrow": "Scan, type, wait",
+          "title": "Ninety seconds, standing at a warehouse door",
+          "body": "A driver picks what they are here for, fires a barcode gun at the screen — it types into a hidden field, debounced two seconds — and every code is checked against the WMS before it joins the list. A duplicate is refused. Then a mobile number, and the wait for a human."
+        },
+        "kiosk-desk": {
+          "eyebrow": "Two screens, one socket",
+          "title": "The staff side, and the lock between them",
+          "body": "The check-in is pushed to the warehouse unit with a looping alarm, and arriving outside the booked slot turns it into a decision rather than a formality. Opening the order locks the other kiosk — 'warehouse is busy' — so two people cannot take the same job. Lines go green as the scanners reach the ordered quantity, and a finished order becomes a PDF you take away by QR code."
+        },
+        "kiosk-fleet": {
+          "eyebrow": "Four units, twenty seconds",
+          "title": "A kiosk that says when it dies",
+          "body": "Every unit broadcasts its machine id on a twenty-second round, and each one is watching the others. Two silent rounds and it is painted red on every remaining screen — which, in a warehouse where the units are aisles apart, is the only way anyone finds out."
         }
       }
     },

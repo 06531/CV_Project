@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>kiosk-desk — scroll-world explainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="scene.css">
+<style>
+  /* The other end of the same socket: what the warehouse staff unit does with
+     a check-in, and the lock it takes out on the guest unit while it works.
+     Shared shell lives in scene.css; only this scene's own layout is here. */
+  :root {
+    --k-green: #8cc644;
+    --k-grey: #4c4c4c;
+    --k-red: #e70000;
+    --k-blue: #107fbf;   /* the assigned-time line in the real approval card */
+  }
+
+  #board { max-width: 660px; }
+
+  .stageRow {
+    display: flex; align-items: center; justify-content: center;
+    gap: clamp(16px, 3.4vmin, 40px);
+    margin-top: clamp(10px, 1.6vmin, 20px);
+  }
+
+  /* ---- the staff unit ---- */
+  .unit { display: flex; flex-direction: column; align-items: center; gap: 7px; flex: none; }
+  .device {
+    position: relative;
+    height: clamp(240px, 46vmin, 340px);
+    aspect-ratio: 10 / 16;
+    padding: 7px;
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    box-shadow: 0 18px 44px -26px rgba(15, 23, 32, .5);
+    font-size: clamp(9.5px, 1.3vmin, 12px);
+  }
+  .screenWrap {
+    position: relative; height: 100%; width: 100%;
+    border-radius: 9px; overflow: hidden;
+    background: #fff; border: 1px solid var(--line);
+  }
+  .scr { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 1em .8em; }
+  .scrTitle { font-size: 1.26em; font-weight: 600; text-align: center; }
+  .scrNote { font-size: .92em; color: var(--muted); text-align: center; }
+
+  /* Screen A — the staff unit's own three buttons, each its own colour. */
+  .adminBtn {
+    margin-top: .7em; padding: .58em 0;
+    border: 2px solid var(--k-grey); border-radius: .7em;
+    font-size: 1.1em; font-weight: 500; color: var(--k-grey); text-align: center;
+  }
+
+  /* Screen B — a check-in wants a decision. */
+  .counter {
+    font-family: var(--mono); font-size: .88em; color: var(--muted);
+    text-align: center; padding-bottom: .5em; border-bottom: 1px solid var(--line);
+  }
+  /* Two auto margins, so the card's middle sits centred between the counter
+     and the buttons rather than leaving one large hole under the question. */
+  .docNo { margin-top: auto; text-align: center; font-size: 1.5em; font-weight: 700; color: #7eb23d; }
+  .docKind { text-align: center; font-size: 1em; }
+  .field { margin-top: .55em; text-align: center; font-size: .95em; }
+  .field b { display: block; font-size: 1.12em; font-weight: 600; color: #7eb23d; }
+  .slotLine { margin-top: .6em; text-align: center; font-size: .92em; color: var(--k-blue); }
+  .askLine { margin-top: .5em; text-align: center; font-size: .98em; line-height: 1.35; }
+  .decide { margin-top: 1.1em; margin-bottom: auto; display: flex; gap: .5em; }
+  .decide > div {
+    flex: 1; padding: .5em 0; border-radius: .45em;
+    font-size: 1.05em; font-weight: 700; text-align: center;
+  }
+  .yes { background: var(--k-green); color: #fff; }
+  .no { border: 2px solid var(--k-red); color: var(--k-red); }
+  .bell { position: absolute; top: .8em; right: .8em; width: 1.5em; height: 1.5em; }
+  .bell svg { width: 100%; height: 100%; fill: none; stroke: var(--k-red); stroke-width: 1.9; stroke-linecap: round; }
+
+  /* Screen C — the picking list, filled in by the handheld scanners. */
+  .itemHead { font-size: 1em; font-weight: 600; color: var(--k-blue); }
+  .itemSub { font-size: .88em; color: var(--muted); }
+  .items { margin-top: .6em; display: flex; flex-direction: column; gap: .3em; }
+  .item {
+    display: flex; align-items: center; justify-content: space-between; gap: .4em;
+    padding: .4em .5em; border-radius: .4em;
+    background: var(--surface-2);
+    font-size: .88em;
+  }
+  .item .sku { font-family: var(--mono); font-size: .92em; color: var(--muted); }
+  .item .qty { font-family: var(--mono); font-weight: 700; }
+  .item.done { background: color-mix(in srgb, var(--k-green) 20%, #fff); }
+  .item.done .qty { color: #3f6a12; }
+
+  /* Screen D — the receipt, and the QR that puts it on a phone. */
+  .paper {
+    margin-top: .7em; flex: 1;
+    border: 1px solid var(--line); border-radius: .4em;
+    background: var(--surface-2);
+    padding: .7em .6em;
+    display: flex; flex-direction: column; gap: .32em;
+  }
+  .paper i { display: block; height: .42em; border-radius: 2px; background: var(--line); font-style: normal; }
+  .paper i.short { width: 55%; }
+  .paper i.mid { width: 78%; }
+  .qrBox {
+    margin-top: .6em; padding: .5em;
+    border: 2px solid var(--k-grey); border-radius: .5em;
+    display: flex; align-items: center; justify-content: space-between; gap: .5em;
+  }
+  .qrBox span { font-size: .95em; }
+  .qrBox svg { width: 2.5em; height: 2.5em; stroke: var(--k-grey); fill: none; stroke-width: 1.8; }
+
+  /* ---- the right column: what crossed the socket, and the guest unit ---- */
+  .side { display: flex; flex-direction: column; gap: clamp(10px, 1.6vmin, 18px); min-width: clamp(200px, 27vmin, 292px); }
+  .side .log { margin-top: 0; line-height: 1.75; }
+  .side .log li + li { margin-top: 3px; }
+  .side .log svg.pending { stroke: var(--line); }
+  .side .log code { font-family: var(--mono); color: var(--ink); font-weight: 600; }
+
+  .guestPanel { padding: clamp(9px, 1.3vmin, 14px) clamp(12px, 1.7vmin, 18px); }
+  .guestPanel .card__head svg.lock { stroke: var(--k-red); }
+  .guestState {
+    margin-top: 8px;
+    display: flex; align-items: center; gap: 7px;
+    font-family: var(--mono); font-size: clamp(10px, 1.05vmin, 12.5px);
+    color: var(--muted);
+  }
+  .guestState .dotState { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex: none; }
+  .guestState.is-locked { color: var(--k-red); font-weight: 700; }
+  .guestState.is-locked .dotState { background: var(--k-red); }
+
+  .miniRail { display: none; }
+
+  @media (max-aspect-ratio: 3/4) {
+    .stageRow { margin-top: 4px; gap: 0; }
+    .side { display: none; }
+    .device { height: 238px; aspect-ratio: 10 / 14; font-size: 8.8px; }
+    .miniRail {
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 4px;
+      margin-top: 9px;
+    }
+    .miniRail .chip { font-size: 10px; padding: 3px 7px; }
+    .miniRail .chip.is-lock { border-color: color-mix(in srgb, var(--k-red) 45%, transparent); color: var(--k-red); }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="board">
+    <div class="window">
+      <div class="titlebar">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="name">kiosk · staff unit</span>
+      </div>
+      <div class="body">
+        <div class="prompt"><span class="sigil">$</span> <span id="typed"></span><span class="caret" id="caret"></span></div>
+
+        <div class="stageRow">
+          <div class="unit" id="unit">
+            <div class="device">
+              <div class="screenWrap">
+
+                <!-- A · idle, waiting on the socket -->
+                <div class="scr" id="scrIdle">
+                  <div class="scrTitle">Warehouse Registration</div>
+                  <div class="adminBtn">Receiving</div>
+                  <div class="adminBtn">Return</div>
+                  <div class="adminBtn">Shipping</div>
+                  <div class="scrNote" style="margin-top:auto">staff unit · admin1</div>
+                </div>
+
+                <!-- B · a check-in arrives and has to be judged -->
+                <div class="scr" id="scrCheck">
+                  <div class="bell" id="bell">
+                    <!-- lucide: bell-ring -->
+                    <svg viewBox="0 0 24 24"><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path class="ring" d="M4 2C2.8 3.7 2 5.8 2 8"/><path class="ring" d="M22 8c0-2.2-.8-4.3-2-6"/></svg>
+                  </div>
+                  <div class="counter">3 orders &nbsp;·&nbsp; 1 pending</div>
+                  <div class="docNo">RL2311000004</div>
+                  <div class="docKind">Receiving check-in</div>
+                  <div class="field">Contractor<b>Kowloon Freight</b></div>
+                  <div class="slotLine">Booked 09:00 – 11:00</div>
+                  <div class="askLine">Arrived outside the booked slot.<br>Approve anyway?</div>
+                  <div class="decide">
+                    <div class="yes" id="btnYes">Accept</div>
+                    <div class="no" id="btnNo">Reject</div>
+                  </div>
+                </div>
+
+                <!-- C · the picking list, filled by the scanners -->
+                <div class="scr" id="scrItems">
+                  <div class="itemHead">Receiving &nbsp;RL2311000004</div>
+                  <div class="itemSub">Kowloon Freight</div>
+                  <div class="items" id="items"></div>
+                </div>
+
+                <!-- D · the signed receipt, and the QR to take it away -->
+                <div class="scr" id="scrPdf">
+                  <div class="scrTitle" style="font-size:1.1em">Receipt ready</div>
+                  <div class="paper">
+                    <i class="mid"></i><i></i><i class="short"></i><i></i><i class="mid"></i><i class="short"></i>
+                  </div>
+                  <div class="qrBox">
+                    <span>Scan to<br>download</span>
+                    <!-- lucide: qr-code -->
+                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM19 19h2v2h-2z"/></svg>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <div class="side" id="side">
+            <ul class="log" id="log">
+              <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><code>request_checkin</code> &nbsp;·&nbsp; pushed</span></li>
+              <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>alert loop &nbsp;·&nbsp; <code>invalid</code> tone</span></li>
+              <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><code>checkInApprovals.do</code></span></li>
+              <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><code>scan_item</code> &nbsp;·&nbsp; qty checked</span></li>
+              <li><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span><code>getPDF.do</code> &nbsp;·&nbsp; + QR</span></li>
+            </ul>
+
+            <div class="card guestPanel" id="guestPanel">
+              <div class="card__head">
+                <!-- lucide: monitor-smartphone -->
+                <svg viewBox="0 0 24 24"><path d="M18 8V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h8"/><path d="M10 19v-3"/><rect x="16" y="10" width="6" height="12" rx="2"/></svg>
+                <span class="card__name">guest unit</span>
+              </div>
+              <div class="guestState" id="guestState">
+                <span class="dotState"></span><span id="guestText">accepting registrations</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="miniRail" id="miniRail">
+          <span class="chip">request_checkin</span>
+          <span class="chip is-lock" id="miniLock">guest unit locked</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const COMMAND = 'approve, pick, sign off';
+  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+  const seg = (p, from, to) => { const x = clamp((p - from) / (to - from), 0, 1); return x * x * (3 - 2 * x); };
+  const band = (p, start, end, fade) => Math.min(seg(p, start, start + fade), 1 - seg(p, end, end + fade));
+  const $ = (id) => document.getElementById(id);
+
+  const board = $('board'), typed = $('typed'), caret = $('caret');
+
+  // One receiving order's lines. Synthetic SKUs and descriptions.
+  const ITEMS = [
+    ['8801234500017', 'Router AX3000', 6],
+    ['8801234500024', 'SIM tray · 100pk', 3],
+    ['8801234500031', 'Fibre modem', 4],
+    ['8801234500048', 'Set-top box', 2],
+  ];
+  $('items').innerHTML = ITEMS.map(([sku, name, qty]) =>
+    `<div class="item"><span><span class="sku">${sku}</span><br>${name}</span><span class="qty">0 / ${qty}</span></div>`).join('');
+  const itemEls = Array.from($('items').children);
+  const qtyEls = itemEls.map((el) => el.querySelector('.qty'));
+
+  const screens = ['scrIdle', 'scrCheck', 'scrItems', 'scrPdf'].map($);
+  const WINDOWS = [[0.04, 0.22], [0.22, 0.50], [0.50, 0.78], [0.78, 1.4]];
+
+  const logItems = Array.from($('log').children);
+  const logTicks = logItems.map((li) => li.querySelector('svg'));
+  // Where each log line becomes true. Same order as the list above.
+  const LOG_AT = [0.26, 0.30, 0.46, 0.62, 0.84];
+
+  const bellRings = Array.from(document.querySelectorAll('#bell .ring'));
+  const btnYes = $('btnYes'), btnNo = $('btnNo');
+  const guestState = $('guestState'), guestText = $('guestText'), miniLock = $('miniLock');
+
+  function reveal(el, t, lift) {
+    el.style.opacity = t;
+    el.style.transform = `translateY(${(1 - t) * (lift == null ? 14 : lift)}px)`;
+  }
+
+  let last = { i: 0, total: 2 };
+
+  window.__setFrame = function (i, total) {
+    last = { i, total };
+    const p = total > 1 ? clamp(i / (total - 1), 0, 1) : 0;
+
+    // 0.00–0.09 — the caption types itself out.
+    const chars = Math.round(seg(p, 0.01, 0.09) * COMMAND.length);
+    typed.textContent = COMMAND.slice(0, chars);
+    caret.style.opacity = p > 0.13 ? 0 : (Math.floor(p * 44) % 2 ? 0.25 : 1);
+
+    // 0.03–0.13 — the unit, then the socket log beside it.
+    reveal($('unit'), seg(p, 0.03, 0.13), 18);
+    reveal($('side'), seg(p, 0.09, 0.19), 14);
+
+    screens.forEach((el, k) => { el.style.opacity = band(p, WINDOWS[k][0], WINDOWS[k][1], 0.035); });
+
+    // B · the alert loops until someone touches the screen, so the bell rings
+    // right up to the tap. Driven off p — no timer, so it is reproducible.
+    const ringing = p > 0.24 && p < 0.44;
+    const pulse = 0.25 + 0.75 * Math.abs(Math.sin(p * 34));
+    bellRings.forEach((r) => { r.style.opacity = ringing ? pulse : 0; });
+    $('bell').style.opacity = ringing ? 1 : seg(0.5, p, 0.52);
+
+    // The tap itself: Accept presses in, Reject fades back.
+    const tapped = seg(p, 0.42, 0.46);
+    btnYes.style.transform = `scale(${(1 - tapped * 0.05).toFixed(3)})`;
+    btnYes.style.filter = `brightness(${(1 - tapped * 0.12).toFixed(3)})`;
+    btnNo.style.opacity = 1 - tapped * 0.65;
+
+    // C · the handhelds report in; a line that reaches its total turns green
+    // and sorts to the top, the way docDetail.tsx re-orders the list.
+    itemEls.forEach((el, k) => {
+      const [, , total] = ITEMS[k];
+      const got = Math.round(seg(p, 0.53 + k * 0.03, 0.63 + k * 0.03) * total);
+      const done = got >= total;
+      qtyEls[k].textContent = `${got} / ${total}`;
+      el.classList.toggle('done', done);
+      el.style.order = done ? String(k) : String(10 + k);
+    });
+
+    // The lock the staff unit takes out while it has an order open —
+    // checkServiceOn, which blanks the guest unit so nobody double-books it.
+    const locked = p > 0.52 && p < 0.86;
+    guestState.classList.toggle('is-locked', locked);
+    guestText.textContent = locked ? 'locked · warehouse is busy' : 'accepting registrations';
+    miniLock.style.opacity = locked ? 1 : 0.25;
+
+    // The socket log fills in behind all of it.
+    logItems.forEach((li, k) => {
+      reveal(li, seg(p, 0.14 + k * 0.055, 0.26 + k * 0.055), 8);
+      logTicks[k].classList.toggle('pending', p < LOG_AT[k]);
+    });
+
+    // Continuous slow push-in so no stretch of the clip is a frozen frame.
+    const settle = seg(p, 0.90, 1);
+    const scale = 1 + p * 0.045 - settle * 0.012;
+    board.style.transform = `translateY(${(0.5 - p) * 24}px) scale(${scale.toFixed(4)})`;
+
+    document.documentElement.dataset.frame = String(i);
+  };
+
+  window.__setFrame(0, 2);
+  window.addEventListener('resize', () => window.__setFrame(last.i, last.total));
+})();
+</script>
+</body>
+</html>

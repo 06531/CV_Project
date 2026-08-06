@@ -61,6 +61,14 @@ export const PROJECT_WORLDS: Partial<Record<ProjectSlug, WorldScene[]>> = {
     scene('otto-flow', 'explainer', { scroll: 1.7, linger: 0.4 }),
     scene('otto-control', 'explainer', { scroll: 1.7, linger: 0.4 }),
   ],
+  // All three are explainers — the kiosks run against an intranet WMS this
+  // repo cannot reach, so there is no tour beat to open with. The device in
+  // the first two is a mock of the real unit, drawn from its source.
+  kiosk: [
+    scene('kiosk-flow', 'explainer', { scroll: 1.8, linger: 0.4 }),
+    scene('kiosk-desk', 'explainer', { scroll: 1.8, linger: 0.4 }),
+    scene('kiosk-fleet', 'explainer', { scroll: 1.5, linger: 0.4 }),
+  ],
 };
 
 /** Seam dissolve width, in viewport heights. */

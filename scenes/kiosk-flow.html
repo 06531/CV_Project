@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>kiosk-flow — scroll-world explainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="scene.css">
+<style>
+  /* What a delivery driver does at the kiosk, screen by screen, with the call
+     each screen makes listed beside it. The device is a mock of the real
+     portrait unit — its own greens and greys, because it is the thing being
+     filmed; everything around it uses the shared palette.
+     Shared shell lives in scene.css; only this scene's own layout is here. */
+  :root {
+    --k-green: #8cc644;   /* the confirm colour throughout the real app */
+    --k-grey: #4c4c4c;    /* unselected outline, and selected fill */
+    --k-idle: #cccccc;    /* register button before a type is picked */
+    --k-aqua: #d3fbee;    /* scanned-document rows (#7FFFD4, calmed down) */
+    --k-red: #e70000;
+  }
+
+  /* The board is narrower than the shared 1000px default: a unit and a rail of
+     five short cards do not fill that, and the slack reads as a misalignment. */
+  #board { max-width: 620px; }
+
+  .stageRow {
+    display: flex; align-items: center; justify-content: center;
+    gap: clamp(16px, 3.4vmin, 40px);
+    margin-top: clamp(10px, 1.6vmin, 20px);
+  }
+
+  /* ---- the unit ---- */
+  .unit { display: flex; flex-direction: column; align-items: center; gap: 7px; flex: none; }
+  .device {
+    position: relative;
+    height: clamp(240px, 46vmin, 340px);
+    aspect-ratio: 10 / 16;
+    padding: 7px;
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    box-shadow: 0 18px 44px -26px rgba(15, 23, 32, .5);
+    font-size: clamp(9.5px, 1.3vmin, 12px);
+  }
+  .screenWrap {
+    position: relative; height: 100%; width: 100%;
+    border-radius: 9px; overflow: hidden;
+    background: #fff; border: 1px solid var(--line);
+  }
+  .scr {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 1.1em .9em;
+    text-align: center;
+  }
+  .scrTitle { font-size: 1.32em; font-weight: 600; letter-spacing: -.01em; }
+  .scrHead { font-size: 1.18em; font-weight: 500; line-height: 1.35; }
+  .scrSub { margin-top: .35em; font-size: .96em; color: var(--muted); }
+
+  /* Screen A — the three document types, then Register. */
+  .bigBtn {
+    width: 100%; margin-top: .72em;
+    padding: .62em 0;
+    border: 2px solid var(--k-grey); border-radius: .7em;
+    font-size: 1.16em; font-weight: 500; color: var(--k-grey);
+  }
+  .regBtn {
+    width: 100%; margin-top: auto;
+    padding: .62em 0;
+    border: 2px solid var(--k-idle); border-radius: .7em;
+    background: var(--k-idle);
+    font-size: 1.16em; font-weight: 500; color: #fff;
+  }
+
+  /* Screen B — the scanner, and what it has picked up. */
+  .scanBox {
+    position: relative;
+    margin-top: .8em;
+    width: 4.6em; height: 4.6em;
+    border-radius: .5em;
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    overflow: hidden;
+  }
+  .scanBox svg { position: absolute; inset: 18%; width: 64%; height: 64%; stroke: var(--k-grey); fill: none; stroke-width: 1.8; }
+  .scanLine { position: absolute; left: 8%; right: 8%; height: 2px; border-radius: 2px; background: var(--accent); }
+  .docList { width: 100%; margin-top: .8em; display: flex; flex-direction: column; gap: .32em; }
+  .docRow {
+    display: flex; align-items: center; justify-content: space-between; gap: .5em;
+    padding: .42em .6em;
+    border-radius: .45em;
+    background: var(--k-aqua);
+    font-family: var(--mono); font-size: .94em;
+  }
+  .docRow .x { color: var(--k-red); font-weight: 700; }
+  .docRow.is-dupe { background: color-mix(in srgb, var(--k-red) 12%, #fff); color: var(--k-red); }
+
+  /* Screen C — the numeric pad. Twelve keys plus a two-key side column,
+     exactly as components/inputMath.tsx lays them out. */
+  .numField {
+    width: 100%; margin-top: .8em;
+    padding: .5em 0;
+    border: 2px solid var(--k-grey); border-radius: .45em;
+    font-size: 1.5em; font-weight: 700; letter-spacing: .06em;
+    min-height: 1.9em;
+  }
+  .padRow { width: 100%; margin-top: .8em; display: flex; gap: .34em; }
+  .pad { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: .34em; }
+  .padSide { display: grid; grid-template-rows: 1fr 1fr; gap: .34em; width: 26%; }
+  .key {
+    display: flex; align-items: center; justify-content: center;
+    padding: .42em 0;
+    border-radius: .38em;
+    background: #f2f2f2;
+    font-size: 1.05em;
+  }
+  .key.skip { background: var(--k-red); color: #fcf697; font-size: .82em; font-weight: 700; }
+  .key.del { background: #e7f3fa; }
+  .key.ent { background: #a0d1ee; }
+
+  /* Screen D — registered, waiting on a human. */
+  .spinner { margin-top: 1.4em; width: 3.4em; height: 3.4em; }
+  .spinner circle { fill: none; stroke-width: 3.2; stroke-linecap: round; }
+  .spinner .rail { stroke: var(--surface-2); }
+  .spinner .arc { stroke: var(--accent); }
+  .timer { margin-top: .9em; font-family: var(--mono); font-size: 1.5em; font-weight: 700; color: var(--accent); }
+  .timerNote { margin-top: .2em; font-size: .9em; color: var(--muted); }
+
+  /* Screen E — what came back, rejects first. */
+  .resRow {
+    width: 100%; margin-top: .42em;
+    display: flex; align-items: center; justify-content: space-between; gap: .5em;
+    padding: .5em .6em;
+    border-radius: .45em;
+    font-family: var(--mono); font-size: .94em;
+  }
+  .resRow.ok { background: color-mix(in srgb, var(--k-green) 16%, #fff); color: #3f6a12; }
+  .resRow.no { background: color-mix(in srgb, var(--k-red) 10%, #fff); color: var(--k-red); }
+  .resRow b { font-weight: 700; }
+
+  /* The scanner is a barcode gun typing into a hidden field — worth saying. */
+  .unitFoot {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: clamp(9px, .98vmin, 11.5px); color: var(--muted);
+  }
+  .unitFoot .slot { width: 46px; height: 5px; border-radius: 3px; background: var(--line); }
+
+  /* ---- the rail beside it ---- */
+  .rail { display: flex; flex-direction: column; gap: clamp(6px, 1vmin, 11px); }
+  .rail .card { min-width: clamp(184px, 25vmin, 268px); padding: clamp(8px, 1.2vmin, 13px) clamp(12px, 1.7vmin, 20px); }
+  .rail .card__meta { margin-top: 6px; }
+
+  /* Portrait keeps the unit and drops the rail — the endpoint names are the
+     first thing that stops being legible at 360px wide, and the scene's copy
+     already carries them. One chip line stands in for the whole rail. */
+  .miniRail { display: none; }
+
+  @media (max-aspect-ratio: 3/4) {
+    .stageRow { margin-top: 4px; gap: 0; }
+    .rail { display: none; }
+    /* Squarer than the real unit, because height is the scarce axis here: the
+       scrim reaches up to about 55% of a phone frame. */
+    .device { height: 238px; aspect-ratio: 10 / 14; font-size: 8.8px; }
+    .unitFoot { display: none; }
+    .miniRail {
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 4px;
+      margin-top: 9px;
+    }
+    .miniRail .chip { font-size: 10px; padding: 3px 7px; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="board">
+    <div class="window">
+      <div class="titlebar">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="name">kiosk · guest unit</span>
+      </div>
+      <div class="body">
+        <div class="prompt"><span class="sigil">$</span> <span id="typed"></span><span class="caret" id="caret"></span></div>
+
+        <div class="stageRow">
+          <div class="unit" id="unit">
+            <div class="device">
+              <div class="screenWrap">
+
+                <!-- A · pick a document type -->
+                <div class="scr" id="scrType">
+                  <div class="scrTitle">Warehouse Registration</div>
+                  <div class="bigBtn" id="btnASN">Receiving</div>
+                  <div class="bigBtn" id="btnMR">Return</div>
+                  <div class="bigBtn" id="btnDN">Shipping</div>
+                  <div class="regBtn" id="btnReg">Register</div>
+                </div>
+
+                <!-- B · scan the documents -->
+                <div class="scr" id="scrScan">
+                  <div class="scrHead">Point the QR code<br>at the scanner</div>
+                  <div class="scanBox">
+                    <!-- lucide: qr-code -->
+                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM19 19h2v2h-2z"/></svg>
+                    <div class="scanLine" id="scanLine"></div>
+                  </div>
+                  <div class="docList" id="docList"></div>
+                </div>
+
+                <!-- C · the mobile number the signed receipt goes to -->
+                <div class="scr" id="scrPhone">
+                  <div class="scrHead">Enter your<br>mobile number</div>
+                  <div class="numField" id="numField"></div>
+                  <div class="padRow">
+                    <div class="pad" id="pad"></div>
+                    <div class="padSide">
+                      <div class="key del">⌫</div>
+                      <div class="key ent">↵</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- D · in the queue, waiting on the warehouse -->
+                <div class="scr" id="scrWait">
+                  <div class="scrHead">Registered</div>
+                  <div class="scrSub">Waiting for warehouse staff</div>
+                  <svg class="spinner" id="spinner" viewBox="0 0 40 40">
+                    <circle class="rail" cx="20" cy="20" r="16"/>
+                    <circle class="arc" cx="20" cy="20" r="16" stroke-dasharray="26 75"/>
+                  </svg>
+                  <div class="timer" id="timer">60s</div>
+                  <div class="timerNote">session times out on its own</div>
+                </div>
+
+                <!-- E · the verdicts, rejects first -->
+                <div class="scr" id="scrDone">
+                  <div class="scrHead">Check-in confirmed</div>
+                  <div class="scrSub">Please follow the staff's instructions</div>
+                  <div style="width:100%; margin-top:.5em" id="resList"></div>
+                </div>
+
+              </div>
+            </div>
+            <div class="unitFoot"><span class="slot"></span> QR scanner</div>
+          </div>
+
+          <div class="rail" id="rail">
+            <div class="card" id="step0">
+              <div class="card__head">
+                <!-- lucide: list-checks -->
+                <svg viewBox="0 0 24 24"><path d="m3 5 2 2 4-4"/><path d="m3 15 2 2 4-4"/><path d="M13 6h8M13 18h8"/></svg>
+                <span class="card__name">pick a type</span>
+              </div>
+              <div class="card__meta"><span class="chip">ASN</span><span class="chip">MR</span><span class="chip">DN</span></div>
+            </div>
+            <div class="card" id="step1">
+              <div class="card__head">
+                <!-- lucide: scan-line -->
+                <svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg>
+                <span class="card__name">scan</span>
+              </div>
+              <div class="card__meta"><span class="chip">hidden input</span><span class="chip is-model">debounce 2s</span></div>
+            </div>
+            <div class="card" id="step2">
+              <div class="card__head">
+                <!-- lucide: shield-check -->
+                <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>
+                <span class="card__name">verify</span>
+              </div>
+              <div class="card__meta"><span class="chip">returnDocNumber.do</span><span class="chip" id="chipDupe">no duplicates</span></div>
+            </div>
+            <div class="card" id="step3">
+              <div class="card__head">
+                <!-- lucide: smartphone -->
+                <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+                <span class="card__name">contact</span>
+              </div>
+              <div class="card__meta"><span class="chip">8 digits</span><span class="chip">addCheckInRecords.do</span></div>
+            </div>
+            <div class="card" id="step4">
+              <div class="card__head">
+                <!-- lucide: radio -->
+                <svg viewBox="0 0 24 24"><path d="M4.9 19.1a10 10 0 0 1 0-14.2M7.8 16.2a6 6 0 0 1 0-8.4"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8a6 6 0 0 1 0 8.4M19.1 4.9a10 10 0 0 1 0 14.2"/></svg>
+                <span class="card__name">verdict</span>
+              </div>
+              <div class="card__meta"><span class="chip is-model">socket</span><span class="chip">check_in_approval</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="miniRail" id="miniRail">
+          <span class="chip">debounce 2s</span>
+          <span class="chip is-model">socket approval</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  // The site's progress pill and Skip button sit over the top-right of a phone
+  // frame, so the portrait caption has to stop short of them.
+  const command = () =>
+    matchMedia('(max-aspect-ratio: 3/4)').matches
+      ? 'register a delivery'
+      : 'register a delivery — 3 documents';
+  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+  const seg = (p, from, to) => { const x = clamp((p - from) / (to - from), 0, 1); return x * x * (3 - 2 * x); };
+  /** Visible between `start` and `end`, cross-dissolving over `fade`. */
+  const band = (p, start, end, fade) => Math.min(seg(p, start, start + fade), 1 - seg(p, end, end + fade));
+  const $ = (id) => document.getElementById(id);
+
+  const board = $('board'), typed = $('typed'), caret = $('caret');
+  const steps = [0, 1, 2, 3, 4].map((i) => $('step' + i));
+
+  // The three documents this driver is bringing in. Synthetic numbers in the
+  // real app's format — nothing here came off a live shipment.
+  const DOCS = ['RL2311000001', 'RL2311000002', 'RL2311000004'];
+  $('docList').innerHTML = DOCS.map((d) =>
+    `<div class="docRow"><span>${d}</span><span class="x">✕</span></div>`).join('') +
+    '<div class="docRow is-dupe"><span>RL2311000002</span><span>duplicate</span></div>';
+  const docRows = Array.from($('docList').children);
+
+  const PHONE = '91234567';
+  $('pad').innerHTML = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'SKIP', '0', '#']
+    .map((k) => `<div class="key${k === 'SKIP' ? ' skip' : ''}">${k}</div>`).join('');
+
+  // Rejects sort to the top of the list, the way phoneNumber.tsx sorts them.
+  const RESULTS = [
+    ['RL2311000004', 'REJECT', 'no'],
+    ['RL2311000001', 'APPROVE', 'ok'],
+    ['RL2311000002', 'APPROVE', 'ok'],
+  ];
+  $('resList').innerHTML = RESULTS.map(([doc, verdict, cls]) =>
+    `<div class="resRow ${cls}"><span>${doc}</span><b>${verdict}</b></div>`).join('');
+  const resRows = Array.from($('resList').children);
+
+  const screens = ['scrType', 'scrScan', 'scrPhone', 'scrWait', 'scrDone'].map($);
+  // start, end — the last one runs past 1 so it holds the final frame.
+  const WINDOWS = [[0.05, 0.26], [0.26, 0.50], [0.50, 0.69], [0.69, 0.83], [0.83, 1.4]];
+
+  const btnASN = $('btnASN'), btnReg = $('btnReg');
+  const scanLine = $('scanLine'), numField = $('numField'), timer = $('timer');
+  const chipDupe = $('chipDupe'), spinner = $('spinner');
+
+  function reveal(el, t, lift) {
+    el.style.opacity = t;
+    el.style.transform = `translateY(${(1 - t) * (lift == null ? 14 : lift)}px)`;
+  }
+
+  let last = { i: 0, total: 2 };
+
+  window.__setFrame = function (i, total) {
+    last = { i, total };
+    const p = total > 1 ? clamp(i / (total - 1), 0, 1) : 0;
+
+    // 0.00–0.09 — the caption types itself out.
+    const text = command();
+    typed.textContent = text.slice(0, Math.round(seg(p, 0.01, 0.09) * text.length));
+    caret.style.opacity = p > 0.13 ? 0 : (Math.floor(p * 44) % 2 ? 0.25 : 1);
+
+    // 0.03–0.13 — the unit arrives, then the rail fills in beside it.
+    reveal($('unit'), seg(p, 0.03, 0.13), 18);
+    steps.forEach((el, k) => reveal(el, seg(p, 0.06 + k * 0.055, 0.18 + k * 0.055), 10));
+
+    // Which screen the unit is showing, and which rail step that maps to.
+    let lead = 0;
+    screens.forEach((el, k) => {
+      const t = band(p, WINDOWS[k][0], WINDOWS[k][1], 0.035);
+      el.style.opacity = t;
+      if (t > 0.5) lead = k;
+    });
+    steps.forEach((el, k) => el.classList.toggle('is-lead', k === lead));
+
+    // A · Receiving is picked, and only then does Register go green.
+    const picked = p > 0.155;
+    btnASN.style.background = picked ? 'var(--k-grey)' : 'transparent';
+    btnASN.style.color = picked ? '#fff' : 'var(--k-grey)';
+    const armed = seg(p, 0.18, 0.22);
+    btnReg.style.background = armed > 0.5 ? 'var(--k-green)' : 'var(--k-idle)';
+    btnReg.style.borderColor = armed > 0.5 ? 'var(--k-green)' : 'var(--k-idle)';
+
+    // B · the gun fires three times; the fourth read is one it already has.
+    // The scan line is driven off p, not a timer, so every frame is reproducible.
+    scanLine.style.top = `${12 + (1 - Math.abs(((p * 9) % 1) * 2 - 1)) * 70}%`;
+    docRows.forEach((row, k) => reveal(row, seg(p, 0.295 + k * 0.042, 0.345 + k * 0.042), 6));
+    const dupeSeen = p > 0.45;
+    chipDupe.textContent = dupeSeen ? '1 duplicate rejected' : 'no duplicates';
+    chipDupe.className = dupeSeen ? 'chip is-model' : 'chip';
+
+    // C · eight digits, entered on the pad.
+    const digits = Math.round(seg(p, 0.545, 0.655) * PHONE.length);
+    numField.textContent = PHONE.slice(0, digits);
+
+    // D · the 60-second window the app gives the warehouse to answer.
+    timer.textContent = `${Math.round(60 - seg(p, 0.70, 0.82) * 23)}s`;
+    spinner.style.transform = `rotate(${(p * 900).toFixed(1)}deg)`;
+
+    // E · two approvals, one rejection — the reject listed first.
+    resRows.forEach((row, k) => reveal(row, seg(p, 0.86 + k * 0.025, 0.90 + k * 0.025), 8));
+
+    // Continuous slow push-in so no stretch of the clip is a frozen frame.
+    const settle = seg(p, 0.90, 1);
+    const scale = 1 + p * 0.045 - settle * 0.012;
+    board.style.transform = `translateY(${(0.5 - p) * 24}px) scale(${scale.toFixed(4)})`;
+
+    document.documentElement.dataset.frame = String(i);
+  };
+
+  window.__setFrame(0, 2);
+  window.addEventListener('resize', () => window.__setFrame(last.i, last.total));
+})();
+</script>
+</body>
+</html>

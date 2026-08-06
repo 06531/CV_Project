@@ -1,6 +1,6 @@
 # CV 網站 — 進度
 
-**最後更新:** 2026-08-06(schedule-tour 重影:六段鏡頭剪接 + 全套英文)
+**最後更新:** 2026-08-06(CMHK Kiosk 三幕解說 scroll-world)
 **技術棧:** Next.js 16 (App Router) + React 19 + TypeScript + Tailwind CSS v4 + next-intl + next-themes
 
 ## 目標
@@ -112,6 +112,30 @@
 - `encode-world-clips.mjs`:修好 keyframe 統計(ffprobe 帶尾逗號,一直報 0),
   加 per-scene `crf`(真 UI 截圖比手畫解說段重幾倍)
 
+### CMHK Kiosk 三幕(2026-08-06)
+- 素材:source code `/Users/kevin06531/Documents/kiosk/cmhk-kiosk`(Expo / RN 0.71,60 檔)
+- **三幕全部係解說段,冇 tour** —— 影唔到真 UI,三個獨立原因:
+  1. API 硬寫死內網 IP(`screens/main.tsx` + `screens/checkStatus.tsx` 都係
+     `10.0.17.213:4200` WMS / `:3010` socket),外網連唔到
+  2. `react-native-pdf`(`components/selectPDF.tsx`)同 `react-native-sound`
+     (`screens/auth/socketCheckIn.tsx`)係 native-only,expo web bundle 一入就爆
+  3. 半數畫面根本要 socket push 先出現(`request_checkin` / `check_in_approval` /
+     `scan_item` / `pdf.url`),冇後端就係一版白畫面
+  → 要影就要 Android 模擬器 + prebuild + 自己寫假 WMS,唔值,所以照 `agents.html` 嗰套砌
+- `kiosk-flow` —— 司機側,一部 kiosk 機身逐格換畫面:揀單種 → 掃 QR(附查重)→
+  電話 keypad → 等批核 → APPROVE / REJECT。旁邊一條 rail 標住每步打邊個 endpoint
+- `kiosk-desk` —— 倉務員側:socket 推播 + 響鬧 → 時段不符要人拍板 → **鎖住另一部機**
+  (`checkServiceOn`,防止兩個人接同一張單)→ 掃夠數變綠 → PDF + QR
+- `kiosk-fleet` —— 4 部機 20 秒心跳:綠 → 一輪冇聲氣 → 兩輪 → 紅「connection fail」,
+  仲有 `pingGuest.do` 補救掣
+- 機身入面用返 app 自己嘅色(`#8CC644` 綠 / `#4C4C4C` 灰 / `#242424` 狀態框),
+  當佢係被拍攝物件;外框、chip、log 一律用 `scene.css` 嘅共用 token
+- **畫面全英文**;寫得 CMHK 個名(CV 文案本身已經有),但唔用佢 logo,
+  單號 / SKU / 公司名全部係假嘅(`RL2311000001`、`Kowloon Freight`)
+- 直度嗰句 `$` caption 要短過橫度 —— 站點嘅「3 / 3」同「Skip」兩粒掣就喺手機幀右上角,
+  長 caption 會捐入去佢哋底下(`command()` 讀 `max-aspect-ratio: 3/4` 揀短版)
+- `src/data/world.ts` 加 `kiosk` key(1.8 / 1.8 / 1.5 vh);clip 合共 4.0MB
+
 ### SEO
 - `src/app/sitemap.ts`(兩 locale × 6 條路徑,由 `routing.locales` + `PROJECTS` 生成)
 - `src/app/robots.ts`
@@ -127,7 +151,7 @@
 
 ## 未做 / 下一步 ⬜
 
-- [ ] **OTTO / CMHK Kiosk / Startie 三個 project 嘅 scroll-world** —— 等素材。
+- [ ] **Startie 嘅 scroll-world** —— 等素材(OTTO 同 CMHK Kiosk 已完成)。
       放喺 `_material/<slug>/`(已 gitignore),三選一:
       1. source code 路徑(最好,可以照 schedule 咁影真 UI)
       2. 測試環境 URL + 帳號(⚠️ 只影假 / 測試資料,真實公司資料唔上網)
@@ -137,7 +161,7 @@
       三選一 —— 兩邊都轉 Starlight(要重影 18 張,但會失去 ABC 嗰啲報名資料)/
       條片轉返 ABC(舊 mp4 已經冇備份,要重拍)/ 維持而家咁,當「唔同學校唔同樣」嚟賣
 - [ ] 部署(Vercel),記住設 `NEXT_PUBLIC_SITE_URL`
-- [ ] `public/cv/Kevin_Wu_CV.pdf`(4.5MB)+ `public/world/`(~9MB,最重係 `otto-tour`
+- [ ] `public/cv/Kevin_Wu_CV.pdf`(4.5MB)+ `public/world/`(~13MB,最重係 `otto-tour`
       兩個 clip 佔 5.9MB —— 真 UI 截圖壓縮率遠差過解說段)要唔要壓細
 
 ## 已知問題 / 風險 ⚠️
@@ -159,6 +183,12 @@
 - 兩幕交接嗰 ~140px scroll 會見到兩段字疊住淡入淡出,係 cross-dissolve,唔係 bug
 - 直度場景頂部喺每幕最尾會有約 9px 被 sticky header 遮到(board 有 ±13px 漂移)
 - `startie` 嘅 `ems.s7yr0.com` 已經連唔到;`otto` 嘅 `tds3.tradelinksig.com` 要 CAS 登入
+- ⚠️ **`next dev` 同 `next start` 共用 `.next/`** —— 兩個一齊行,dev 會覆蓋 production
+  嘅 static chunks,`next start` 嗰邊個頁面就會 JS 404、component 唔 hydrate,
+  scroll-world 完全唔郁但 **console 冇 error**。驗收之前先確認冇 `next dev` 行緊
+- `world-check.mjs` 要明示 `reducedMotion: 'no-preference'` —— 新版 headless Chromium
+  預設報 `prefers-reduced-motion: reduce`,而 `ScrollWorld` 見到就索性唔建 `<video>`,
+  結果個 check 靜靜雞去驗緊 poster fallback(報 `t: []` + `stage opacity 1 ✗`)
 - Agent 定義唔會熱載入:改完 `.claude/agents/*.md` 要重開 session
 
 ## 驗證方法
