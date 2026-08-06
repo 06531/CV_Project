@@ -13,12 +13,16 @@ interface Props {
   seenKey: string;
   /**
    * 'scrub' — the reader drives it by scrolling, and the film is as long as
-   * the track. 'auto' — one screen, plays itself; for an opener, where nobody
-   * has asked for anything yet and should not have to scroll to find out what
-   * the page is.
+   * the track. 'auto' — one screen, plays itself.
+   *
+   * The index gets 'scrub': it is the deck about how the work is made, and a
+   * reader who has landed on a list of projects is already scrolling. A case
+   * study gets 'auto', because arriving there is a request for that project in
+   * particular, and three screens of scroll standing between the reader and the
+   * thing they asked for is a toll rather than an introduction.
    */
   mode?: 'scrub' | 'auto';
-  /** Selector Skip jumps to, in 'auto' mode. */
+  /** Selector Skip jumps to, in 'auto' mode. 'scrub' skips past its own section. */
   skipTo?: string;
 }
 

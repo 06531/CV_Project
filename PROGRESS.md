@@ -1,6 +1,6 @@
 # CV 網站 — 進度
 
-**最後更新:** 2026-08-06(CMHK Kiosk + Startie 各三幕解說 scroll-world;四個 project 全部有 world)
+**最後更新:** 2026-08-06(四個 project 全部有 world;clip 壓細 30%;首頁 scroll / 內頁自動播)
 **技術棧:** Next.js 16 (App Router) + React 19 + TypeScript + Tailwind CSS v4 + next-intl + next-themes
 
 ## 目標
@@ -156,6 +156,23 @@
 - 排版:`startie-stack` 直度唔准 side node 換行,否則變五格直疊、超出 scrim 90px,
   而且 Stripe 會夾喺 NestJS 同 PostgreSQL 中間,睇落好似 request 穿過佢
 
+### 播放模式對調 + clip 壓細(2026-08-06)
+- **`/portfolio` 由自動播轉 scroll 拖動,project 內頁反過來轉自動播**
+  —— `WorldStage` 個 `mode` prop 喺兩個 call site 對調就得,section 由組件自己出,
+  頁面唔使改結構。理由寫咗入 `WorldStage.tsx`:落到 project 頁嘅人係specifically
+  想睇嗰個 project,唔應該先拖三個螢幕;而首頁本身就係一個要碌嘅清單
+- `ScrollWorld` 個 Skip 係跳過自己嗰個 section(`offsetTop + offsetHeight`),
+  唔靠 anchor,所以兩邊掉轉都唔使動 `skipTo`;`AutoWorld` 就要(內頁改咗 `#case`)
+- **`public/world/` 25.7MB → 18.1MB(-30%)**,全部重編,keyframe 節奏不變:
+  - `encode-world-clips.mjs` 嘅 profile crf:桌面 20 → **26**,手機 23 → **28**
+  - 真 UI 兩幕另計(`scenes/manifest.mjs` 嘅 per-scene `crf`,兩個 viewport 共用):
+    `schedule-tour` 由預設 → **27**,`otto-tour` 27 → **31**
+  - 驗過質素先落決定:抽第 120 幀、裁最細嗰行 mono chip、放大兩倍對比 ——
+    解說段 crf 28 同 crf 20 睇唔出分別;`otto-tour` crf 31 個 jqGrid 文字仍然清楚,
+    淨係格線軟咗少少(而且成幅嘢係喺 scrim 後面)
+  - **解說段咁慳係因為佢哋近乎向量圖**;真 UI 截圖同一個 crf 貴幾倍,
+    所以唔可以一個數字行天下
+
 ### SEO
 - `src/app/sitemap.ts`(兩 locale × 6 條路徑,由 `routing.locales` + `PROJECTS` 生成)
 - `src/app/robots.ts`
@@ -176,8 +193,8 @@
       三選一 —— 兩邊都轉 Starlight(要重影 18 張,但會失去 ABC 嗰啲報名資料)/
       條片轉返 ABC(舊 mp4 已經冇備份,要重拍)/ 維持而家咁,當「唔同學校唔同樣」嚟賣
 - [ ] 部署(Vercel),記住設 `NEXT_PUBLIC_SITE_URL`
-- [ ] `public/cv/Kevin_Wu_CV.pdf`(4.5MB)+ `public/world/`(~17MB,最重係 `otto-tour`
-      兩個 clip 佔 5.9MB —— 真 UI 截圖壓縮率遠差過解說段)要唔要壓細
+- [x] ~~`public/world/` 壓細~~ —— 25.7MB → 18.1MB。仲有 `public/cv/Kevin_Wu_CV.pdf`(4.5MB)
+      未壓;`otto-tour` 兩個 clip 仍然佔 4.3MB,真 UI 截圖壓縮率就係差過解說段
 
 ## 已知問題 / 風險 ⚠️
 - **`next dev` 唔會熱載入 `messages/*.json`** —— 改完文案見到 raw key 就係呢個原因,

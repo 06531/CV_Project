@@ -54,7 +54,12 @@ export default async function ProjectPage({ params }: PageProps<'/[locale]/portf
         {t('world.skip')}
       </a>
 
-      <WorldStage scenes={PROJECT_WORLDS[project.slug]} seenKey={`cv-world-${project.slug}`} />
+      <WorldStage
+        scenes={PROJECT_WORLDS[project.slug]}
+        seenKey={`cv-world-${project.slug}`}
+        mode="auto"
+        skipTo="#case"
+      />
 
       <div id="case" className="mx-auto max-w-6xl scroll-mt-20 px-4 sm:px-6">
       <Link
