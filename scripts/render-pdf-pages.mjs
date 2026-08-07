@@ -5,7 +5,12 @@
 // rasteriser into the dependency tree. Pages are rendered at 2x for retina and
 // written straight out as JPEG (a 2x PNG of an A4 page is ~1MB).
 //
-// Also copies CV.pdf to public/cv/ so the download route can serve it.
+// Also copies the CV to public/cv/ so the download route can serve it — but
+// from `Kevin_CV.pdf`, not from the file the stills come out of. The two are
+// different documents: the 9-page one is the long form these portfolio pages
+// are cut from, and the 2-page one is what a reader gets when they click
+// Download. Copying the wrong one here silently replaces the CV the site hands
+// out, which is why it is spelled out rather than reusing `pdf` below.
 //
 // Usage: node scripts/render-pdf-pages.mjs [--force]
 
@@ -84,7 +89,12 @@ mkdirSync(outDir, { recursive: true });
 console.log('Rendering portfolio pages from CV.pdf …');
 for (const [page, name] of Object.entries(PAGES)) render(Number(page), name);
 
+const download = path.join(root, 'Kevin_CV.pdf');
 const pdfCopy = path.join(root, 'public', 'cv', 'Kevin_Wu_CV.pdf');
+if (!existsSync(download)) {
+  console.error(`Kevin_CV.pdf not found at ${download} — download copy skipped`);
+  process.exit(1);
+}
 mkdirSync(path.dirname(pdfCopy), { recursive: true });
-copyFileSync(pdf, pdfCopy);
-console.log('  copy   CV.pdf -> public/cv/Kevin_Wu_CV.pdf');
+copyFileSync(download, pdfCopy);
+console.log('  copy   Kevin_CV.pdf -> public/cv/Kevin_Wu_CV.pdf');

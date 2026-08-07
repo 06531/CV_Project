@@ -1,11 +1,17 @@
-// Produces the copy of the CV the site serves, from the master at the repo
-// root. `CV.pdf` is never modified — it is also what `render-pdf-pages.mjs`
-// renders the portfolio stills from, so it stays at full quality.
+// Produces the copy of the CV the site serves, from `Kevin_CV.pdf` at the repo
+// root. That is the 2-page CV a reader downloads — NOT `CV.pdf`, the 9-page
+// long form `render-pdf-pages.mjs` cuts the portfolio stills out of. Both used
+// to point at the same file; they are different documents now, and pointing
+// this one back at `CV.pdf` would quietly hand out the wrong CV. Neither
+// master is ever modified.
 //
-// Why there is anything to gain: 91% of the master is embedded images, and 172
-// of its 180 images are FlateDecode — lossless screenshots pasted in from the
-// design tool. Re-encoding those as JPEG is where the 60% goes. The page text
-// is vector and is not touched: the extracted text layer of the output is
+// Whether it is worth running at all now depends on the master. It was written
+// for a 4.3MB one, where 91% was embedded images and 172 of its 180 images were
+// FlateDecode — lossless screenshots pasted in from the design tool, and
+// re-encoding those as JPEG was where the 60% went. Against a master already
+// under 200KB the saving is small and this is a document people print, so the
+// site currently serves `Kevin_CV.pdf` untouched. The page text is vector and
+// is never touched either way: the extracted text layer of the output is
 // byte-identical to the master's.
 //
 // macOS's built-in Quartz "Reduce File Size" filter cannot do this — applied
@@ -20,7 +26,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const SRC = path.join(root, 'CV.pdf');
+const SRC = path.join(root, 'Kevin_CV.pdf');
 const OUT = path.join(root, 'public', 'cv', 'Kevin_Wu_CV.pdf');
 
 /**
