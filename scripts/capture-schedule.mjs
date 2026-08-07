@@ -138,6 +138,15 @@ async function main() {
   }
 
   await app.bootApp();
+  // Every screen below except `directory` is ABC Music Academy, because it is
+  // the only seeded school with enrolments — the others' dashboards read 0 and
+  // their course lists are empty, which is a poor advertisement for a booking
+  // platform. It also ships as `stage`, a dark purple that matches nothing else
+  // on this site; the scroll-world tour dodged that by following a different
+  // school, which is not an option here without giving up the data. So: keep
+  // the school, repaint it. Safe after boot — the API reads companies.theme
+  // per request. Teal to sit with this site's own accent.
+  app.setTheme('abc-music', { template: 'academy', color: '#0d9488' });
   console.log('Capturing …');
   await capture();
 }

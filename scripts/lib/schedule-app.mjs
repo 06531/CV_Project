@@ -186,6 +186,29 @@ BEGIN
 END $$;`);
 }
 
+/**
+ * Repaints a seeded school's brand — the per-company `theme` the product lets
+ * an owner pick, which drives the whole admin, not just an accent.
+ *
+ * Why a capture would want to: `abc-music` ships as `stage`, a dark purple, and
+ * it is also the only seeded school with any enrolments. So the shot that shows
+ * the product with real numbers in it is the one that does not match the rest
+ * of the site, and the schools that do match have dashboards reading zero. This
+ * lets a capture keep the data and change the paint, instead of choosing.
+ *
+ * Demo data only, in the throwaway e2e database, after `seed()` and before
+ * anything boots — the app is never touched, it just serves what is in the
+ * table. `anglicise()` rewrites the same rows for the same reason.
+ */
+export function setTheme(slug, { template, color }) {
+  psql(`
+UPDATE companies
+   SET theme = jsonb_set(
+                 jsonb_set(theme::jsonb, '{template}', to_jsonb(${lit(template)}::text)),
+                 '{color}', to_jsonb(${lit(color)}::text))::json
+ WHERE slug = ${lit(slug)};`);
+}
+
 // ------------------------------------------------------------------ boot
 
 /** Seeds, translates, then brings up the API and Vite. Returns the web origin. */
