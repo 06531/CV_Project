@@ -13,7 +13,12 @@
     "assets:world": "npm run assets:world:capture && npm run assets:world:encode",
     "assets:world:capture": "node scripts/capture-world-frames.mjs",
     "assets:world:encode": "node scripts/encode-world-clips.mjs",
+    "check": "npm run check:world && npm run check:world:mobile && npm run check:case && npm run check:case:mobile && npm run check:assets",
     "check:world": "node scripts/world-check.mjs .shots",
+    "check:world:mobile": "node scripts/world-check.mjs .shots-m http://localhost:3001/en/portfolio mobile",
+    "check:case": "node scripts/case-check.mjs",
+    "check:case:mobile": "node scripts/case-check.mjs http://localhost:3001/en/portfolio/schedule mobile",
+    "check:assets": "node scripts/asset-check.mjs",
     "shot": "node scripts/shot.mjs",
     "assets:cv": "node scripts/compress-cv-pdf.mjs"
   },

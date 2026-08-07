@@ -72,12 +72,27 @@ Adding a scene means: the HTML in `scenes/`, an entry in `scenes/manifest.mjs`, 
 
 ## Checking a change
 
-With `npm run dev` running:
+Against a production build, not `npm run dev` — `next dev` does not hot-reload `messages/*.json`,
+so raw keys there mean nothing and real ones can hide:
 
-- `npm run check:world` drives the schedule case study past a browser and reports whether each
-  clip actually scrubs, whether the stage is fully dissolved before the sticky container lets
-  go, and whether the content below is clickable. Pass a URL and `mobile` for other cases.
-- `npm run shot -- .shots/x.png http://localhost:3000/en/portfolio mobile` for a single frame.
+```bash
+npm run build && npx next start -p 3001
+npm run check          # all of the below, desktop and mobile
+```
+
+- **`check:world`** — the scrub deck at `/en/portfolio`: does each clip actually scrub, is the
+  stage fully dissolved before the sticky container lets go, is the content below clickable.
+- **`check:case`** — a case study's film at `/en/portfolio/schedule`, which plays itself instead.
+  Three phases, each guarding a bug this page has shipped: it plays on *every* arrival rather
+  than opening on a dead Replay button; scrolling out during the opening beat does not leave a
+  Play button painted over a running film; and Replay rewinds all of it, not half.
+- **`check:assets`** — every schedule still and both tour clips stay light. This is the
+  fingerprint of a capture that skipped `setTheme`, i.e. the stills and the film drifting onto
+  different tenants — see the `TENANT` block in `capture-world-frames.mjs`.
+
+Each takes `[url] [desktop|mobile]` (`check:world` takes an output directory first) and exits
+non-zero on failure. `npm run shot -- .shots/x.png http://localhost:3001/en/portfolio mobile`
+grabs a single frame.
 
 ## Deploying
 

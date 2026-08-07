@@ -267,15 +267,18 @@
 ```bash
 npm run build                 # typecheck + build,現時 21 條 route
 npx next start -p 3001        # 驗收一定要用呢個(見上面 messages 熱載入問題)
-node scripts/world-check.mjs .shots   http://localhost:3001/en/portfolio/schedule
-node scripts/world-check.mjs .shots-m http://localhost:3001/en/portfolio/schedule mobile
-node scripts/world-check.mjs .shots-i http://localhost:3001/zh-HK/portfolio
+npm run check                 # world + case + assets,desktop 同 mobile 各一次
 ```
-`world-check` 應該見到:
-- `currentTime` 隨 scroll 單調上升,scroll 返上會跌
-- `stage opacity at the seam: 0 ✓`
-- `content below clickable: yes`
-- `page errors: none`
+`npm run check` 拆開係三支,全部 fail 就 exit 1:
+
+| 指令 | 睇乜 |
+| --- | --- |
+| `check:world` | `/en/portfolio` 嘅 scrub deck:`currentTime` 隨 scroll 單調上升、scroll 返上會跌、`stage opacity at the seam: 0 ✓`、`content below clickable: yes`、冇 page error |
+| `check:case` | `/en/portfolio/schedule` 嘅自動播:每次入都播(唔會開喺死掣上)、開場捲走再捲返唔會蓋住粒 Play、播完出 Replay 而且撳完真係全部歸零 |
+| `check:assets` | 18 張 schedule stills + 兩條 tour clip 各 8 格都要夠光 —— 即係擋住 capture 漏咗 `setTheme`、stills 同片走返兩間學校 |
+
+**`check:world` 唔可以指去 case study,`check:case` 亦唔可以指去 `/en/portfolio`** ——
+兩種 deck 機制唔同,指錯咗兩支都會即刻話你知同埋叫你用邊支。
 
 其他:
 - `curl -s localhost:3001/robots.txt` / `sitemap.xml` / `-I /en/opengraph-image`(要 `image/png`)
