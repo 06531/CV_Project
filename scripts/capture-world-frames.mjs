@@ -87,17 +87,26 @@ async function captureExplainer(browser, scene) {
 // -------------------------------------------------------------- app scenes
 
 /**
- * Which seeded school the tour follows. Each company picks its own visual
- * template, so this choice decides the clip's whole palette: `starlight-dance`
- * is the `studio` template — light, plum, serif headings — where `abc-music` is
- * `stage`, which is dark purple. Every other clip on the site is light, so the
- * tour follows a school that matches.
+ * Which seeded school the tour follows, and what it wears.
+ *
+ * Each company picks its own visual template, so this decides the clip's whole
+ * palette. The tour used to follow `starlight-dance` purely to escape
+ * `abc-music`'s `stage` template, a dark purple that matches nothing else on
+ * the site — but that meant the film and the stills below it toured different
+ * schools, and Starlight has no enrolments at all, so every number on screen
+ * was a zero.
+ *
+ * Now both follow ABC, the one school with real bookings, and the paint is
+ * changed instead of the school: `setTheme` below puts it in the same light
+ * teal `academy` template the stills use. Keep this in step with
+ * capture-schedule.mjs — if the two drift apart, one page shows two products.
  */
 const TENANT = {
-  slug: 'starlight-dance',
-  /** Beginner Ballet — the first course this school lists. */
-  courseId: 9,
-  owner: schedule.CREDENTIALS.owners['starlight-dance'],
+  slug: 'abc-music',
+  /** Pop Piano — 6 of 10 seats taken, and the course the stills book into. */
+  courseId: 2,
+  owner: schedule.CREDENTIALS.owners['abc-music'],
+  theme: { template: 'academy', color: '#0d9488' },
 };
 
 /**
@@ -501,6 +510,7 @@ async function main() {
       // go with its own entry in RECIPES.
       if (!booted) {
         await schedule.bootApp();
+        schedule.setTheme(TENANT.slug, TENANT.theme);
         booted = true;
       }
       await captureApp(browser, scene);
