@@ -395,10 +395,11 @@ export default function ScrollWorld({ scenes, seenKey }: Props) {
 
         {/* Clear of the site header, which is sticky at z-40 and would
             otherwise swallow both controls. */}
-        <div className="absolute right-4 top-20 z-40 flex items-center gap-2 sm:right-6">
-          <span className="rounded-full border border-line bg-surface/80 px-2.5 py-1 font-mono text-[11px] text-muted backdrop-blur-sm">
-            {t('progress', { current: active + 1, total: scenes.length })}
-          </span>
+        {/* Skip only — the scroll position already says how far in they are,
+            and a "1 / 2" chip beside it read as a control rather than a
+            readout. The count survives for screen readers in the live region
+            just above. */}
+        <div className="absolute right-4 top-20 z-40 sm:right-6">
           <button
             type="button"
             onClick={skip}

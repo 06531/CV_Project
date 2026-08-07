@@ -145,6 +145,7 @@
     "world": {
       "label": "How this was built",
       "skip": "Skip",
+      "play": "Play",
       "replay": "Replay",
       "caseStudy": "Case study",
       "progress": "{current} / {total}",

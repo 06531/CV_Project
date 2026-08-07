@@ -145,6 +145,7 @@
     "world": {
       "label": "點樣做出嚟",
       "skip": "跳過",
+      "play": "播放",
       "replay": "重播",
       "caseStudy": "查看詳情",
       "progress": "{current} / {total}",

@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowDown, ArrowRight, ChevronsDown, Play } from 'lucide-react';
+import { ArrowDown, ArrowRight, ChevronsDown, Play, RotateCcw } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { WorldScene } from '@/data/world';
@@ -14,7 +14,6 @@ const smooth = (x: number) => {
 
 interface Props {
   scenes: WorldScene[];
-  seenKey: string;
   /** Where Skip sends the reader. */
   skipTo: string;
 }
@@ -24,13 +23,19 @@ interface Props {
  * tall, starts on its own, and hands the page over when it is done. Used for
  * the portfolio opener, where the reader has not asked for anything yet and
  * should not have to scroll to find out what the page is.
+ *
+ * It plays on every arrival. Nothing is remembered between visits: the film is
+ * one screen, skippable, and over in seconds, so gating it behind a button
+ * would cost a returning reader more than watching it again does.
  */
-export default function AutoWorld({ scenes, seenKey, skipTo }: Props) {
+export default function AutoWorld({ scenes, skipTo }: Props) {
   const t = useTranslations('portfolio.world');
   const sectionRef = useRef<HTMLElement>(null);
   const holderRefs = useRef<(HTMLDivElement | null)[]>([]);
   const copyRefs = useRef<(HTMLDivElement | null)[]>([]);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  /** Set by the engine below, so Replay can rewind a closure it does not own. */
+  const restartRef = useRef<(() => void) | null>(null);
 
   const [active, setActive] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -39,16 +44,7 @@ export default function AutoWorld({ scenes, seenKey, skipTo }: Props) {
   const [blocked, setBlocked] = useState(false);
   const [done, setDone] = useState(false);
 
-  const markSeen = useCallback(() => {
-    try {
-      sessionStorage.setItem(seenKey, '1');
-    } catch {
-      /* private mode — they just see it again */
-    }
-  }, [seenKey]);
-
   const skip = useCallback(() => {
-    markSeen();
     const target = document.querySelector(skipTo);
     const section = sectionRef.current;
     const top = target
@@ -57,7 +53,11 @@ export default function AutoWorld({ scenes, seenKey, skipTo }: Props) {
         ? section.offsetTop + section.offsetHeight
         : 0;
     window.scrollTo({ top, behavior: 'smooth' });
-  }, [markSeen, skipTo]);
+  }, [skipTo]);
+
+  const replay = useCallback(() => {
+    restartRef.current?.();
+  }, []);
 
   useEffect(() => {
     const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -69,10 +69,35 @@ export default function AutoWorld({ scenes, seenKey, skipTo }: Props) {
       return;
     }
 
+    // An effect re-run means the film starts over, so the state that lives out
+    // here has to start over with it — otherwise scene 1 plays under a Replay
+    // button left behind by the previous run.
+    setDone(false);
+    setProgress(0);
+
     const small = window.matchMedia('(max-width: 860px)').matches;
     const total = scenes.length;
     let current = 0;
     let cancelled = false;
+    /** The section is in view. A clip is only ever started while this is true. */
+    let onScreen = true;
+
+    const clearBlocked = () => {
+      if (!cancelled) setBlocked(false);
+    };
+
+    /**
+     * Autoplay refusal and "we paused it ourselves" arrive down the same
+     * channel. Per spec a `play()` still pending when something calls `pause()`
+     * rejects with AbortError — and the observer below pauses on every scroll
+     * out — so treating every rejection as a refusal paints a Play button over
+     * a film that is running perfectly well.
+     */
+    const onPlayRejected = (err: unknown) => {
+      if (cancelled) return;
+      if (err instanceof DOMException && err.name === 'AbortError') return;
+      setBlocked(true);
+    };
 
     const videos = scenes.map((scene, i) => {
       const video = document.createElement('video');
@@ -116,13 +141,13 @@ export default function AutoWorld({ scenes, seenKey, skipTo }: Props) {
       current = i;
       setActive(i);
       video.currentTime = 0;
-      void video
-        .play()
-        .then(() => setBlocked(false))
-        .catch(() => setBlocked(true));
       // Give the next clip a head start so the cut is not a black gap.
       const next = videos[i + 1];
       if (next) next.preload = 'auto';
+      // Cued but not started: off screen a playing video is just heat, and the
+      // observer below starts it the moment the section comes back.
+      if (!onScreen) return;
+      void video.play().then(clearBlocked).catch(onPlayRejected);
     }
 
     function onEnded(this: HTMLVideoElement) {
@@ -135,7 +160,6 @@ export default function AutoWorld({ scenes, seenKey, skipTo }: Props) {
       // Hold the last frame; the page below is the next thing to look at.
       setProgress(1);
       setDone(true);
-      markSeen();
     }
 
     videos.forEach((video) => {
@@ -146,11 +170,15 @@ export default function AutoWorld({ scenes, seenKey, skipTo }: Props) {
     // Off screen, a playing video is just heat.
     const observer = new IntersectionObserver(
       ([entry]) => {
+        onScreen = entry.isIntersecting;
         const video = videos[current];
         if (!video) return;
         if (entry.isIntersecting) {
           if (video.ended) return;
-          void video.play().catch(() => {});
+          // Same handlers as `play()`: this is the path back from a scroll-out,
+          // and it used to swallow its result, leaving `blocked` set from the
+          // AbortError its own pause had caused.
+          void video.play().then(clearBlocked).catch(onPlayRejected);
         } else {
           video.pause();
         }
@@ -164,10 +192,27 @@ export default function AutoWorld({ scenes, seenKey, skipTo }: Props) {
     }
     window.addEventListener('keydown', onKey);
 
+    /** Back to the top of the deck — the one path a rerun takes, so Replay
+     *  cannot reset half the state and leave the rest at the end of the film.
+     *  The last scene's copy is deliberately *held* at full opacity when the
+     *  film stops, so it has to be cleared by hand; otherwise it sits over the
+     *  opening beat all through the rerun. */
+    restartRef.current = () => {
+      for (const copy of copyRefs.current) {
+        if (!copy) continue;
+        copy.style.opacity = '0';
+        copy.style.pointerEvents = 'none';
+      }
+      setDone(false);
+      setProgress(0);
+      play(0);
+    };
+
     play(0);
 
     return () => {
       cancelled = true;
+      restartRef.current = null;
       observer.disconnect();
       window.removeEventListener('keydown', onKey);
       videos.forEach((video) => {
@@ -178,7 +223,7 @@ export default function AutoWorld({ scenes, seenKey, skipTo }: Props) {
       });
       videoRefs.current = [];
     };
-  }, [scenes, markSeen, skip]);
+  }, [scenes, skip]);
 
   return (
     <section
@@ -240,9 +285,19 @@ export default function AutoWorld({ scenes, seenKey, skipTo }: Props) {
         </div>
       </div>
 
-      {/* How much of the film is left, right under the site header. */}
+      {/* How much of the film is left, right under the site header. A real
+          progressbar rather than decoration: with the scene count gone this is
+          the only readout a low-vision reader who is not on a screen reader
+          has left. */}
       {!reduced && (
-        <div aria-hidden className="absolute inset-x-0 top-0 z-40 h-0.5 bg-line/50">
+        <div
+          role="progressbar"
+          aria-label={t('label')}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(progress * 100)}
+          className="absolute inset-x-0 top-0 z-40 h-0.5 bg-line/50"
+        >
           <div
             className="h-full bg-accent transition-[width] duration-200 ease-linear"
             style={{ width: `${Math.round(progress * 100)}%` }}
@@ -255,23 +310,35 @@ export default function AutoWorld({ scenes, seenKey, skipTo }: Props) {
         {t(`scenes.${scenes[active].id}.title`)}
       </p>
 
+      {/* One control, and it always says what it does: Skip while the film is
+          running, Replay once it has stopped — "skip" past something already
+          over is a button with nothing left to skip. The scene count used to
+          sit beside it, but "1 / 3" read as pagination the reader had to
+          operate; the bar across the top carries it instead, and the live
+          region below carries it under reduced motion, where there is no bar
+          and nothing to be partway through. */}
       <div className="absolute right-4 top-4 z-40 flex items-center gap-2 sm:right-6 sm:top-6">
-        <span className="rounded-full border border-line bg-surface/80 px-2.5 py-1 font-mono text-[11px] text-muted backdrop-blur-sm">
-          {t('progress', { current: active + 1, total: scenes.length })}
-        </span>
         <button
           type="button"
-          onClick={skip}
+          onClick={done ? replay : skip}
           className="tap-target inline-flex items-center gap-1.5 rounded-full border border-line bg-surface/80 px-3 py-1.5 font-mono text-[11px] text-ink backdrop-blur-sm transition-colors hover:border-accent hover:text-accent"
         >
-          {t('skip')}
-          <ArrowDown className="size-3.5" aria-hidden />
+          {done ? t('replay') : t('skip')}
+          {done ? (
+            <RotateCcw className="size-3.5" aria-hidden />
+          ) : (
+            <ArrowDown className="size-3.5" aria-hidden />
+          )}
         </button>
       </div>
 
       {/* Autoplay can be refused — Low Power Mode, Save-Data, a strict setting.
-          Give them the button rather than a still frame that never moves. */}
-      {blocked && !reduced && (
+          Give them the button rather than a still frame that never moves.
+          Not once the film is over: there the control top-right is the only
+          right answer, and a second button saying the same word in the middle
+          of the screen would do something different from the one beside it.
+          "Play", not "Replay" — when autoplay is refused nothing has run yet. */}
+      {blocked && !done && !reduced && (
         <button
           type="button"
           onClick={() => {
@@ -281,7 +348,7 @@ export default function AutoWorld({ scenes, seenKey, skipTo }: Props) {
           className="absolute left-1/2 top-1/2 z-40 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-full border border-line bg-surface/90 px-4 py-2.5 font-mono text-xs text-ink backdrop-blur-sm"
         >
           <Play className="size-4" aria-hidden />
-          {t('replay')}
+          {t('play')}
         </button>
       )}
 
