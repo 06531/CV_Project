@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="scene.css">
+<script src="shell.js"></script>
 <style>
   /* Ten settings sections, then a review that takes the event out of the
      owner's hands. The dark rail is the product's own; everything around it
@@ -248,10 +249,7 @@
 
 <script>
 (function () {
-  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
-  const seg = (p, from, to) => { const x = clamp((p - from) / (to - from), 0, 1); return x * x * (3 - 2 * x); };
   const band = (p, start, end, fade) => Math.min(seg(p, start, start + fade), 1 - seg(p, end, end + fade));
-  const $ = (id) => document.getElementById(id);
   const portrait = () => matchMedia('(max-aspect-ratio: 3/4)').matches;
   const command = () => (portrait() ? 'publish an event' : 'take an event from draft to published');
 
@@ -306,11 +304,7 @@
     el.style.transform = `translateY(${(1 - t) * (lift == null ? 12 : lift)}px)`;
   }
 
-  let last = { i: 0, total: 2 };
-
-  window.__setFrame = function (i, total) {
-    last = { i, total };
-    const p = total > 1 ? clamp(i / (total - 1), 0, 1) : 0;
+  defineScene(function (p) {
 
     const text = command();
     typed.textContent = text.slice(0, Math.round(seg(p, 0.01, 0.09) * text.length));
@@ -365,11 +359,7 @@
     const scale = 1 + p * 0.045 - settle * 0.012;
     board.style.transform = `translateY(${(0.5 - p) * 24}px) scale(${scale.toFixed(4)})`;
 
-    document.documentElement.dataset.frame = String(i);
-  };
-
-  window.__setFrame(0, 2);
-  window.addEventListener('resize', () => window.__setFrame(last.i, last.total));
+  });
 })();
 </script>
 </body>

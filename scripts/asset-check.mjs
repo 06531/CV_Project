@@ -20,8 +20,9 @@ import { readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { CHECK_ORIGIN, gotoOrExit } from './lib/browser.mjs';
 
-const ORIGIN = (process.argv[2] ?? 'http://localhost:3001').replace(/\/$/, '');
+const ORIGIN = (process.argv[2] ?? CHECK_ORIGIN).replace(/\/$/, '');
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 /** Below this, a frame is showing a dark tenant theme rather than the light one. */
@@ -35,18 +36,11 @@ const stills = readdirSync(path.join(root, 'public', 'portfolio', 'schedule'))
   .map((f) => `/portfolio/schedule/${f}`);
 const clips = ['/world/schedule-tour.mp4', '/world/schedule-tour-m.mp4'];
 
+// A plain page rather than launchCheck's: nothing here depends on the viewport
+// or on motion settings — the canvas it measures into is a fixed 160px wide.
 const browser = await chromium.launch();
 const page = await browser.newPage();
-try {
-  await page.goto(`${ORIGIN}/en`, { waitUntil: 'domcontentloaded' });
-} catch (err) {
-  console.error(
-    `cannot reach ${ORIGIN}\n  ${err.message.split('\n')[0]}\n` +
-      '  start the server first: npx next start -p 3001',
-  );
-  await browser.close();
-  process.exit(1);
-}
+await gotoOrExit(page, `${ORIGIN}/en`, { browser, waitUntil: 'domcontentloaded' });
 
 /** Mean luminance and purple share of whatever is drawn onto the canvas. */
 const MEASURE = `(ctx, w, h) => {

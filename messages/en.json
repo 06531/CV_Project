@@ -83,8 +83,8 @@
         "role": "Programmer",
         "projects": {
           "otto": {
-            "name": "TDS eDOC Project (OTTO)",
-            "description": "A specialized document management system built on Tradelink's \"Trader Documentation Service\" platform for OTTO International (OI). It connects an extensive network of supply chain partners — overseas buyers, sellers and freight forwarders — to facilitate, process and optimize multi-national document exchange and workflow automation.",
+            "name": "TDS eDOC Project",
+            "description": "A specialized document management system built on Tradelink's \"Trader Documentation Service\" platform for a multinational retail sourcing group. It connects an extensive network of supply chain partners — overseas buyers, sellers and freight forwarders — to facilitate, process and optimize multi-national document exchange and workflow automation.",
             "bullets": [
               "Developed and maintained the core modules of the global supply chain system and handled daily production support.",
               "Used JasperReports and XSL-FO to generate standard PDF and XML business documents.",
@@ -165,6 +165,21 @@
           "title": "A seat is held, or it isn't",
           "body": "The capacity check runs inside a transaction, the teacher's week updates, and Stripe confirms before anything counts as booked. Same API for student, teacher and admin — different scope."
         },
+        "smc-chat": {
+          "eyebrow": "One socket, both directions",
+          "title": "A conversation, from the queue to the agent",
+          "body": "It waits in a queue with the others, an agent takes it, and from then on every line moves on a connection that is already open — inbound and outbound, plus the system notifications nobody asked for. Mid-sentence the agent opens the customer's file: who they are, the last three times they wrote in, and the note being logged against this one."
+        },
+        "smc-routing": {
+          "eyebrow": "Before a human sees it",
+          "title": "One rule, three different outcomes",
+          "body": "Conditions are rows in a table — channel, keyword, time of day — and so are the actions they trigger: reply from a template, tag it, send it to a queue. Three conversations fall through the same rule and come out in three places, one of them answered without anybody reading it. Changing who handles what is a setting, not a release."
+        },
+        "smc-report": {
+          "eyebrow": "Same request, two files",
+          "title": "The export is cut to who asked for it",
+          "body": "A month of interactions is aggregated in a stored procedure and written out in batches rather than held whole in memory. The download path is built from the requester's authorisation, so a supervisor's file is genuinely shorter than an administrator's — the queues they may not see never reach the disk. Underneath it, a Go service takes the heavy reads straight into the core database."
+        },
         "agents": {
           "eyebrow": "AI-assisted development",
           "title": "One prompt. A whole team.",
@@ -175,10 +190,10 @@
           "title": "Then it has to pass",
           "body": "Developer hands to tester. Both message files move together or switching language shows raw keys; typecheck and build run before any of it counts as done."
         },
-        "otto-tour": {
-          "eyebrow": "Production, not a prototype",
+        "otto-desk": {
+          "eyebrow": "One folder, one shipment",
           "title": "A document desk for a supply chain",
-          "body": "Tradelink's platform, running: folders that hold a whole shipment, a grid you can filter down any column, and twenty-five document types across sea, air, rail and courier. Screens are from the UAT environment, with names replaced."
+          "body": "A shipment's whole paper trail hangs off one folder — purchase order, packing list, invoice, bill of lading — in a grid that filters down any column, opened from twenty-five document types across sea, air, rail and courier. Drawn, not filmed: the platform is a former employer's, and every folder id, party and number here is invented."
         },
         "otto-flow": {
           "eyebrow": "Four parties, two hops",
@@ -266,10 +281,28 @@
           "platform": "Platform admin: every company, with approval and plan controls"
         }
       },
+      "smc": {
+        "name": "SMC",
+        "role": "Continuous Technologies International Limited · Programmer",
+        "note": "A client's live contact centre — nothing here is a screenshot. Every screen on this page is drawn from the description, and every id, queue, path and figure in it is invented.",
+        "summary": "A customer engagement and routing system integrated with Genesys Cloud: it assigns communication channels and live agents to chat interactions, answers what it can on its own, and produces the reports the operation is run from.",
+        "highlights": [
+          "Vue.js agent console for live chat, with the conversation queue, the active thread and the customer's file in one view.",
+          "WebSockets on both the front end and the back end, carrying chat messages and system notifications in both directions on one open connection rather than a poll.",
+          "Agents search, open and log customer profiles and prior interactions without leaving the conversation they are in.",
+          "Routing queues configured by trigger condition — channel, keyword, time of day — with automated actions attached: reply from a template, tag, route, or escalate to a person.",
+          "Node.js batch export of CSV reports and chat histories, writing in chunks rather than holding the file in memory, with the download path derived from the requester's authorisation.",
+          "Admin modules for managing multiple dashboard layouts and UI themes behind the console.",
+          "SQL queries and stored procedures in Microsoft SQL Server for system storage and the report aggregations.",
+          "A separate Go service exposing high-performance endpoints straight into the core server database, for the reads too heavy to go through the application tier."
+        ],
+        "shots": {}
+      },
       "otto": {
-        "name": "TDS eDOC (OTTO)",
+        "name": "TDS eDOC ",
         "role": "Tradelink Electronic Commerce Limited · Programmer",
-        "summary": "A document management system on Tradelink's Trader Documentation Service platform for OTTO International, connecting overseas buyers, sellers and freight forwarders for multi-national document exchange and workflow automation.",
+        "note": "A former employer's platform — nothing here is a screenshot. Every screen on this page is drawn from the description, and every folder id, party and document number in it is invented.",
+        "summary": "A document management system on Tradelink's Trader Documentation Service platform for a multinational retail sourcing group, connecting overseas buyers, sellers and freight forwarders for multi-national document exchange and workflow automation.",
         "highlights": [
           "Core modules of the global supply chain system, plus daily production support.",
           "PDF and XML business documents generated with JasperReports and XSL-FO.",

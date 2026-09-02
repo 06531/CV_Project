@@ -2,6 +2,25 @@
 // is looked up by the ids below — this file only holds what never gets
 // translated: dates, tech stacks, image paths and links.
 
+import { PORTFOLIO_VERSION } from '@/data/asset-versions';
+import { BOARD_SHOT_WORLDS, PROJECT_WORLDS } from '@/data/world';
+
+/**
+ * A portfolio image path with a fingerprint of the shipped screenshots on it.
+ *
+ * Without one, replacing a picture does not replace what anybody sees: the URL
+ * is the cache key for Next's optimiser, for Vercel's edge and for the reader's
+ * browser, and it says nothing about which version of the file it means. That
+ * cost us a re-render which masked a private address off a page and then went
+ * on serving the old picture regardless — for four hours by default, and
+ * separately per format, so the JPEG came back correct while the AVIF actually
+ * on screen did not.
+ *
+ * `npm run assets:version` regenerates the token; `next.config.ts` has to
+ * declare the same one under `images.localPatterns`.
+ */
+const assetSrc = (src: string) => `${src}?v=${PORTFOLIO_VERSION}`;
+
 export const PROFILE = {
   name: 'Kevin Wu',
   phone: '+852 66812652',
@@ -60,6 +79,7 @@ export const EXPERIENCE: Role[] = [
     projects: [
       {
         id: 'smc',
+        portfolio: 'smc',
         tech: ['Vue.js', 'Node.js', 'Microsoft SQL Server', 'WebSockets'],
       },
       {
@@ -151,7 +171,7 @@ export const SKILLS: SkillGroup[] = [
 
 export const EDUCATION = [{ id: 'tecky', period: '12/2022 – 04/2023' }] as const;
 
-export type ProjectSlug = 'schedule' | 'otto' | 'kiosk' | 'startie';
+export type ProjectSlug = 'schedule' | 'smc' | 'otto' | 'kiosk' | 'startie';
 
 export interface ProjectImage {
   src: string;
@@ -167,12 +187,42 @@ export interface Project {
   /** i18n id under `portfolio.projects.<slug>.role` */
   tech: string[];
   images: ProjectImage[];
+  /**
+   * A public URL a reader can go and look at, which only the schedule platform
+   * has: it is mine and it is deployed. OTTO and the kiosks belong to a former
+   * employer and are not mine to point strangers at, and both of Startie's
+   * deployments have since been taken down, so the links that used to sit on
+   * those three resolved to nothing at all.
+   */
   links?: { label: string; href: string }[];
   /** Feature the desktop/mobile switcher (only useful when both exist). */
   viewportToggle?: boolean;
-  /** Number of highlight bullets in `portfolio.projects.<slug>.highlights`. */
+  /**
+   * The images are explainer boards cut from the scroll-world rather than
+   * screenshots. A board is about 2.5:1, so the gallery gives it a tile of that
+   * shape; in the default 16/10 one the whole lower third is empty, and
+   * `object-cover` cannot recover it — anything wider than the tile gets
+   * cropped at the sides instead.
+   */
+  boardShots?: boolean;
+  /** Span both columns on the index, with a badge. */
   featured?: boolean;
 }
+
+/**
+ * The gallery of a project that has no screenshots: one tile per scene of its
+ * scroll-world, cut from the board that scene ends on.
+ *
+ * Derived rather than listed, so a fourth scene cannot leave a fourth picture
+ * on disk that nothing shows. `scripts/encode-world-clips.mjs` writes the files
+ * from the same two lists.
+ */
+const boardGallery = (slug: (typeof BOARD_SHOT_WORLDS)[number]) => ({
+  boardShots: true as const,
+  images: (PROJECT_WORLDS[slug] ?? []).map((_, i) => ({
+    src: assetSrc(`/portfolio/${slug}-${i + 1}.jpg`),
+  })),
+});
 
 const scheduleShots = [
   'directory',
@@ -208,29 +258,55 @@ export const PROJECTS: Project[] = [
     ],
     images: [
       ...scheduleShots.map((name) => ({
-        src: `/portfolio/schedule/desktop-${name}.jpg`,
+        src: assetSrc(`/portfolio/schedule/desktop-${name}.jpg`),
         viewport: 'desktop' as const,
         captionId: name,
       })),
       ...scheduleShots.map((name) => ({
-        src: `/portfolio/schedule/mobile-${name}.jpg`,
+        src: assetSrc(`/portfolio/schedule/mobile-${name}.jpg`),
         viewport: 'mobile' as const,
         captionId: name,
       })),
     ],
+    // A running deployment, not the production tenancy: the schools and the
+    // enrolments on it are seeded test data, which is what makes it safe to
+    // hand a stranger.
+    links: [
+      {
+        label: 'schedule-project-testing.vercel.app',
+        href: 'https://schedule-project-testing.vercel.app',
+      },
+    ],
+  },
+  {
+    slug: 'smc',
+    period: '10/2025 – Now',
+    tech: ['Vue.js', 'Node.js', 'WebSockets', 'Microsoft SQL Server', 'Golang', 'Genesys Cloud'],
+    // Not screenshots. A live client contact centre is not something to film,
+    // so these are the closing frames of the three explainers — the same boards
+    // the scroll-world ends each scene on, and the only pictures this project
+    // has. They are cropped to the board (scene.css reserves the bottom 32vh
+    // for the scroll-world's copy, and nothing lays copy over them here) and
+    // written into public/portfolio/ so they version with the rest of the
+    // gallery.
+    ...boardGallery('smc'),
   },
   {
     slug: 'otto',
     period: '06/2023 – 09/2025',
     tech: ['JSP', 'Java', 'Eclipse', 'Tomcat', 'MySQL', 'JasperReports', 'XSL-FO', 'Cron jobs'],
-    images: [{ src: '/portfolio/otto-1.jpg' }, { src: '/portfolio/otto-2.jpg' }],
-    links: [{ label: 'tds3.tradelinksig.com', href: 'https://tds3.tradelinksig.com/scm-sms/home.do' }],
+    // Boards, like SMC's, and for the same reason — see BOARD_SHOT_WORLDS.
+    // These two tiles used to be pages 3 and 4 of the long-form CV, which are
+    // mostly screenshots of the running platform: a former employer's system,
+    // with a customer's shipments in it. `render-pdf-pages.mjs` no longer cuts
+    // them, so there is nothing left to serve them from either.
+    ...boardGallery('otto'),
   },
   {
     slug: 'kiosk',
     period: '06/2023 – 09/2025',
     tech: ['React Native', 'Java', 'Socket.io', 'MySQL'],
-    images: [{ src: '/portfolio/kiosk-1.jpg' }],
+    images: [{ src: assetSrc('/portfolio/kiosk-1.jpg') }],
   },
   {
     slug: 'startie',
@@ -256,14 +332,10 @@ export const PROJECTS: Project[] = [
       'Vercel',
     ],
     images: [
-      { src: '/portfolio/startie-1.jpg' },
-      { src: '/portfolio/startie-2.jpg' },
-      { src: '/portfolio/startie-3.jpg' },
-      { src: '/portfolio/startie-4.jpg' },
-    ],
-    links: [
-      { label: 'ems.s7yr0.com', href: 'https://ems.s7yr0.com' },
-      { label: 'api.s7yr0.com', href: 'https://api.s7yr0.com' },
+      { src: assetSrc('/portfolio/startie-1.jpg') },
+      { src: assetSrc('/portfolio/startie-2.jpg') },
+      { src: assetSrc('/portfolio/startie-3.jpg') },
+      { src: assetSrc('/portfolio/startie-4.jpg') },
     ],
   },
 ];

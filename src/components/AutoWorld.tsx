@@ -1,16 +1,13 @@
 'use client';
 
-import { ArrowDown, ArrowRight, ChevronsDown, Play, RotateCcw } from 'lucide-react';
+import { ArrowDown, ChevronsDown, Play, RotateCcw } from 'lucide-react';
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { clamp, smooth } from '@/components/world/easing';
+import SceneCopy from '@/components/world/SceneCopy';
+import { WorldAnnounce, WorldControl, WorldScrim } from '@/components/world/WorldChrome';
 import type { WorldScene } from '@/data/world';
-import { Link } from '@/i18n/navigation';
-
-const clamp = (x: number, a = 0, b = 1) => Math.min(b, Math.max(a, x));
-const smooth = (x: number) => {
-  const t = clamp(x);
-  return t * t * (3 - 2 * t);
-};
 
 interface Props {
   scenes: WorldScene[];
@@ -19,10 +16,11 @@ interface Props {
 }
 
 /**
- * The same films as `ScrollWorld`, but played rather than scrubbed: one screen
- * tall, starts on its own, and hands the page over when it is done. Used for
- * the portfolio opener, where the reader has not asked for anything yet and
- * should not have to scroll to find out what the page is.
+ * The projector for every deck on the site: one screen tall, starts on its own,
+ * and hands the page over when it is done. The index opener and the case
+ * studies are both played this way — a reader who has landed on either has not
+ * asked to operate anything, and dragging a film by the scrollbar put several
+ * screens between them and the page they came for.
  *
  * It plays on every arrival. Nothing is remembered between visits: the film is
  * one screen, skippable, and over in seconds, so gating it behind a button
@@ -59,13 +57,22 @@ export default function AutoWorld({ scenes, skipTo }: Props) {
     restartRef.current?.();
   }, []);
 
+  // Both a mount-time read and a live one: a reader who turns motion down mid
+  // session gets the stills, and one who turns it back up gets the film.
   useEffect(() => {
     const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const sync = (event: MediaQueryListEvent) => setReduced(event.matches);
+    motionQuery.addEventListener('change', sync);
+    return () => motionQuery.removeEventListener('change', sync);
+  }, []);
+
+  useEffect(() => {
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    // Checked here and not just off `reduced` state so that no <video> is ever
+    // constructed for a reader who asked for less motion — a flag flipped in an
+    // effect would arrive one render too late to stop the first clip playing.
     if (motionQuery.matches) {
       setReduced(true);
-      // Nothing moves, so the copy has to be legible from the first paint.
-      const copy = copyRefs.current[0];
-      if (copy) copy.style.opacity = '1';
       return;
     }
 
@@ -223,7 +230,14 @@ export default function AutoWorld({ scenes, skipTo }: Props) {
       });
       videoRefs.current = [];
     };
-  }, [scenes, skip]);
+  }, [scenes, skip, reduced]);
+
+  // The film carried two thirds of its own copy: only the scene being played is
+  // on screen at all, so with the projector switched off the deck used to
+  // collapse to scene one and the rest of the explanation — the part a case
+  // study is actually for — became unreachable. Lay it out as stills instead,
+  // whole, in order, and let the page scroll as normal.
+  if (reduced) return <StaticDeck scenes={scenes} />;
 
   return (
     <section
@@ -250,37 +264,19 @@ export default function AutoWorld({ scenes, skipTo }: Props) {
         </div>
       ))}
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 h-[40%] bg-linear-to-t from-bg from-75% via-bg/45 via-92% to-transparent sm:h-[32%] sm:from-66% sm:via-88%" />
+      <WorldScrim />
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30">
         <div className="relative mx-auto h-[34svh] max-w-6xl px-4 sm:px-6">
           {scenes.map((scene, i) => (
-            <div
+            <SceneCopy
               key={scene.id}
+              scene={scene}
+              variant="film"
               ref={(el) => {
                 copyRefs.current[i] = el;
               }}
-              className="absolute inset-x-4 bottom-8 opacity-0 transition-none sm:inset-x-6"
-            >
-              <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
-                {t(`scenes.${scene.id}.eyebrow`)}
-              </p>
-              <h2 className="mt-1.5 max-w-2xl text-xl font-bold tracking-tight sm:mt-2 sm:text-4xl">
-                {t(`scenes.${scene.id}.title`)}
-              </h2>
-              <p className="mt-1.5 line-clamp-4 max-w-xl text-[13px] leading-snug text-muted sm:mt-2 sm:line-clamp-none sm:text-base sm:leading-relaxed">
-                {t(`scenes.${scene.id}.body`)}
-              </p>
-              {scene.project && (
-                <Link
-                  href={`/portfolio/${scene.project}`}
-                  className="mt-4 inline-flex items-center gap-1.5 rounded-md border border-line bg-surface/80 px-3 py-2 font-mono text-xs text-accent backdrop-blur-sm transition-colors hover:border-accent"
-                >
-                  {t('caseStudy')}
-                  <ArrowRight className="size-3.5" aria-hidden />
-                </Link>
-              )}
-            </div>
+            />
           ))}
         </div>
       </div>
@@ -289,48 +285,32 @@ export default function AutoWorld({ scenes, skipTo }: Props) {
           progressbar rather than decoration: with the scene count gone this is
           the only readout a low-vision reader who is not on a screen reader
           has left. */}
-      {!reduced && (
+      <div
+        role="progressbar"
+        aria-label={t('label')}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(progress * 100)}
+        className="absolute inset-x-0 top-0 z-40 h-0.5 bg-line/50"
+      >
         <div
-          role="progressbar"
-          aria-label={t('label')}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round(progress * 100)}
-          className="absolute inset-x-0 top-0 z-40 h-0.5 bg-line/50"
-        >
-          <div
-            className="h-full bg-accent transition-[width] duration-200 ease-linear"
-            style={{ width: `${Math.round(progress * 100)}%` }}
-          />
-        </div>
-      )}
+          className="h-full bg-accent transition-[width] duration-200 ease-linear"
+          style={{ width: `${Math.round(progress * 100)}%` }}
+        />
+      </div>
 
-      <p className="sr-only" aria-live="polite">
-        {t('progress', { current: active + 1, total: scenes.length })} ·{' '}
-        {t(`scenes.${scenes[active].id}.title`)}
-      </p>
+      <WorldAnnounce scenes={scenes} active={active} />
 
       {/* One control, and it always says what it does: Skip while the film is
           running, Replay once it has stopped — "skip" past something already
           over is a button with nothing left to skip. The scene count used to
           sit beside it, but "1 / 3" read as pagination the reader had to
-          operate; the bar across the top carries it instead, and the live
-          region below carries it under reduced motion, where there is no bar
-          and nothing to be partway through. */}
-      <div className="absolute right-4 top-4 z-40 flex items-center gap-2 sm:right-6 sm:top-6">
-        <button
-          type="button"
-          onClick={done ? replay : skip}
-          className="tap-target inline-flex items-center gap-1.5 rounded-full border border-line bg-surface/80 px-3 py-1.5 font-mono text-[11px] text-ink backdrop-blur-sm transition-colors hover:border-accent hover:text-accent"
-        >
-          {done ? t('replay') : t('skip')}
-          {done ? (
-            <RotateCcw className="size-3.5" aria-hidden />
-          ) : (
-            <ArrowDown className="size-3.5" aria-hidden />
-          )}
-        </button>
-      </div>
+          operate; the bar across the top carries it instead. */}
+      <WorldControl
+        label={done ? t('replay') : t('skip')}
+        icon={done ? RotateCcw : ArrowDown}
+        onClick={done ? replay : skip}
+      />
 
       {/* Autoplay can be refused — Low Power Mode, Save-Data, a strict setting.
           Give them the button rather than a still frame that never moves.
@@ -338,7 +318,7 @@ export default function AutoWorld({ scenes, skipTo }: Props) {
           right answer, and a second button saying the same word in the middle
           of the screen would do something different from the one beside it.
           "Play", not "Replay" — when autoplay is refused nothing has run yet. */}
-      {blocked && !done && !reduced && (
+      {blocked && !done && (
         <button
           type="button"
           onClick={() => {
@@ -352,7 +332,7 @@ export default function AutoWorld({ scenes, skipTo }: Props) {
         </button>
       )}
 
-      {(done || reduced) && (
+      {done && (
         <div
           aria-hidden
           className="absolute inset-x-0 bottom-2 z-40 flex justify-center text-muted"
@@ -360,6 +340,39 @@ export default function AutoWorld({ scenes, skipTo }: Props) {
           <ChevronsDown className="size-4 animate-bounce" />
         </div>
       )}
+    </section>
+  );
+}
+
+/**
+ * The same deck with the projector off: every scene's still and every scene's
+ * words, stacked in order, scrolled like any other page. No full-bleed screen
+ * either — a picture the height of the viewport is a wall to scroll past when
+ * nothing on it is going to move.
+ */
+function StaticDeck({ scenes }: { scenes: WorldScene[] }) {
+  const t = useTranslations('portfolio.world');
+
+  // It carries its own bottom margin: the film it stands in for is a full
+  // screen tall and the case study simply follows it, which with stills in
+  // place would butt the last paragraph up against the back link.
+  return (
+    <section aria-label={t('label')} className="mx-auto mb-12 max-w-6xl px-4 sm:mb-16 sm:px-6">
+      <ol className="space-y-10 sm:space-y-14">
+        {scenes.map((scene) => (
+          <li key={scene.id}>
+            <Image
+              src={scene.still}
+              alt=""
+              width={1920}
+              height={1080}
+              sizes="(min-width: 1024px) 64rem, 100vw"
+              className="w-full rounded-lg border border-line bg-surface-2"
+            />
+            <SceneCopy scene={scene} variant="static" />
+          </li>
+        ))}
+      </ol>
     </section>
   );
 }

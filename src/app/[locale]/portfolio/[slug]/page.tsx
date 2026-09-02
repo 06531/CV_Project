@@ -9,6 +9,7 @@ import { getProject, PROJECTS } from '@/data/cv';
 import { PROJECT_WORLDS } from '@/data/world';
 import { Link } from '@/i18n/navigation';
 import { routing } from '@/i18n/routing';
+import { pageMetadata } from '@/site';
 
 export function generateStaticParams() {
   return routing.locales.flatMap((locale) =>
@@ -22,7 +23,15 @@ export async function generateMetadata({
   const { locale, slug } = await params;
   if (!getProject(slug)) return {};
   const t = await getTranslations({ locale, namespace: 'portfolio' });
-  return { title: `${t(`projects.${slug}.name`)} — Kevin Wu` };
+
+  return pageMetadata({
+    locale,
+    path: `/portfolio/${slug}`,
+    title: `${t(`projects.${slug}.name`)} — Kevin Wu`,
+    // The project's own one-liner rather than the site's: a case study shared
+    // in a chat should describe the project, not the CV it hangs off.
+    description: t(`projects.${slug}.summary`),
+  });
 }
 
 export default async function ProjectPage({ params }: PageProps<'/[locale]/portfolio/[slug]'>) {
@@ -54,7 +63,7 @@ export default async function ProjectPage({ params }: PageProps<'/[locale]/portf
         {t('world.skip')}
       </a>
 
-      <WorldStage scenes={PROJECT_WORLDS[project.slug]} mode="auto" skipTo="#case" />
+      <WorldStage scenes={PROJECT_WORLDS[project.slug]} skipTo="#case" />
 
       <div id="case" className="mx-auto max-w-6xl scroll-mt-20 px-4 sm:px-6">
       <Link
@@ -135,7 +144,7 @@ export default async function ProjectPage({ params }: PageProps<'/[locale]/portf
         <h2 className="mb-4 font-mono text-xs uppercase tracking-[0.15em] text-accent">
           {t('screens')}
         </h2>
-        <Gallery desktop={desktop} mobile={mobile} />
+        <Gallery desktop={desktop} mobile={mobile} wide={project.boardShots} />
       </section>
       </div>
     </div>

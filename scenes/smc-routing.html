@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>smc-routing — scroll-world explainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="scene.css">
+<script src="shell.js"></script>
+<style>
+  /* What happens to a conversation before a human ever sees it. One rule is
+     built out of conditions on the left; three conversations fall through it
+     in the middle and come out on three different branches; the queues on the
+     right fill up, including the one nobody wants to reach.
+
+     The rule and every conversation on this board are invented — the system
+     this describes is a client's production contact centre and is not filmed.
+     Shared shell lives in scene.css. */
+  :root {
+    --r-warn: #b45309;    /* escalation and overflow — attention, not failure */
+  }
+
+  /* Wider than the chat board: the middle column has to hold a track long
+     enough that a chip travelling it reads as travel rather than a jump. */
+  #board { max-width: 940px; }
+
+  @media (min-aspect-ratio: 3/4) {
+    .body { padding: clamp(16px, 2.3vmin, 24px); }
+  }
+
+  .flow {
+    display: grid;
+    grid-template-columns: 0.95fr 1.3fr 0.78fr;
+    gap: clamp(8px, 1.4vmin, 16px);
+    align-items: start;
+    margin-top: clamp(10px, 1.5vmin, 16px);
+  }
+
+  .col {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface);
+    padding: clamp(7px, 1vmin, 11px) clamp(8px, 1.1vmin, 12px);
+    min-height: clamp(150px, 24vmin, 206px);
+  }
+  .col.is-lead { border-color: var(--accent); box-shadow: 0 12px 34px -20px rgba(13, 116, 144, .5); }
+
+  .colHead {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    font-family: var(--mono);
+    font-size: clamp(9px, .98vmin, 11.5px);
+    text-transform: uppercase; letter-spacing: .07em;
+    color: var(--muted);
+    padding-bottom: clamp(5px, .7vmin, 8px);
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* ---- left · the rule, assembled ---- */
+  .clauseHead {
+    margin-top: clamp(7px, 1vmin, 11px);
+    font-family: var(--mono); font-size: clamp(8.5px, .92vmin, 10.5px);
+    font-weight: 700; letter-spacing: .09em; color: var(--accent);
+  }
+  .clauseHead.then { color: var(--ok); }
+  .clause { display: flex; flex-direction: column; gap: clamp(3px, .45vmin, 5px); margin-top: clamp(4px, .6vmin, 6px); }
+  .cRow {
+    display: flex; align-items: center; gap: 6px;
+    padding: clamp(4px, .58vmin, 7px) clamp(6px, .8vmin, 9px);
+    border: 1px solid var(--line); border-radius: 7px;
+    background: var(--surface-2);
+    font-family: var(--mono); font-size: clamp(8.5px, .95vmin, 11px);
+    line-height: 1.3;
+  }
+  .cRow .k { color: var(--muted); flex: none; }
+  .cRow b { font-weight: 700; color: var(--ink); }
+  .cRow.act { background: color-mix(in srgb, var(--ok) 9%, #fff); border-color: color-mix(in srgb, var(--ok) 28%, var(--line)); }
+
+  /* The whole argument of the scene, said once, at the bottom of the rule. */
+  .ruleFoot {
+    margin-top: clamp(7px, 1vmin, 10px);
+    font-family: var(--mono); font-size: clamp(8px, .88vmin, 10px);
+    color: var(--muted); line-height: 1.45;
+  }
+
+  /* ---- middle · three conversations falling through it ---- */
+  .lanes { display: flex; flex-direction: column; gap: clamp(8px, 1.3vmin, 15px); margin-top: clamp(9px, 1.3vmin, 14px); }
+  .lane { display: flex; flex-direction: column; gap: clamp(3px, .4vmin, 5px); }
+  .laneLabel {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    font-family: var(--mono); font-size: clamp(8px, .88vmin, 10px); color: var(--muted);
+  }
+  .laneTrack {
+    position: relative;
+    height: clamp(22px, 3.1vmin, 30px);
+  }
+  /* The rail the chip runs along — dashed, so the distance is legible even
+     where the chip is not yet on it. */
+  .rail {
+    position: absolute; left: 0; right: 0; top: 50%;
+    height: 0; border-top: 1px dashed var(--line);
+  }
+  .conv {
+    position: absolute; top: 50%;
+    transform: translate(-50%, -50%);
+    padding: clamp(3px, .45vmin, 5px) clamp(6px, .8vmin, 9px);
+    border-radius: 999px;
+    border: 1px solid var(--accent);
+    background: var(--surface);
+    font-family: var(--mono); font-size: clamp(8px, .9vmin, 10.5px); font-weight: 700;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+  .outcome {
+    position: absolute; right: 0; top: 50%;
+    transform: translateY(-50%);
+    padding: clamp(3px, .45vmin, 5px) clamp(6px, .8vmin, 9px);
+    border-radius: 6px;
+    font-family: var(--mono); font-size: clamp(8px, .88vmin, 10px); font-weight: 700;
+    white-space: nowrap;
+  }
+  .outcome.ok { background: color-mix(in srgb, var(--ok) 14%, #fff); color: var(--ok); }
+  .outcome.route { background: var(--accent-soft); color: var(--accent); }
+  .outcome.esc { background: color-mix(in srgb, var(--r-warn) 13%, #fff); color: var(--r-warn); }
+
+  /* ---- right · what the queues look like afterwards ---- */
+  .qbList { display: flex; flex-direction: column; gap: clamp(6px, .9vmin, 10px); margin-top: clamp(8px, 1.2vmin, 13px); }
+  .qb { display: flex; flex-direction: column; gap: clamp(2px, .3vmin, 4px); }
+  .qbTop {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    font-family: var(--mono); font-size: clamp(8.5px, .92vmin, 10.5px); color: var(--muted);
+  }
+  .qbTop b { color: var(--ink); font-weight: 700; }
+  .qbBar { height: clamp(5px, .75vmin, 8px); border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+  .qbFill { height: 100%; border-radius: 4px; background: var(--accent); }
+  .qb.is-full .qbFill { background: var(--r-warn); }
+  .qb.is-full .qbTop b { color: var(--r-warn); }
+  .qbNote {
+    margin-top: clamp(6px, .9vmin, 9px);
+    font-family: var(--mono); font-size: clamp(8px, .88vmin, 10px);
+    color: var(--r-warn); font-weight: 700; line-height: 1.4;
+  }
+
+  .miniRail { display: none; }
+
+  /* Portrait drops the rule text and the queue bars — 8px monospace clauses at
+     360px wide are a grey texture, not a rule. The three branches are the part
+     that survives, so the middle column gets the whole frame. */
+  @media (max-aspect-ratio: 3/4) {
+    .flow { grid-template-columns: 1fr; gap: 0; margin-top: 6px; }
+    .col.rule, .col.queues { display: none; }
+    .col { min-height: 0; padding: 9px 10px; }
+    .lanes { gap: 13px; margin-top: 8px; }
+    .laneTrack { height: 26px; }
+    .conv { font-size: 10px; }
+    .outcome { font-size: 9.5px; }
+    .laneLabel { font-size: 9.5px; }
+    .miniRail {
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 4px;
+      margin-top: 9px;
+    }
+    .miniRail .chip { font-size: 10px; padding: 3px 7px; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="board">
+    <div class="window">
+      <div class="titlebar">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="name">routing · queue rules</span>
+      </div>
+      <div class="body">
+        <div class="prompt"><span class="sigil">$</span> <span id="typed"></span><span class="caret" id="caret"></span></div>
+
+        <div class="flow">
+
+          <div class="col rule" id="colRule">
+            <div class="colHead"><span>rule</span><span>after-hours billing</span></div>
+
+            <div class="clauseHead" id="whenHead">WHEN</div>
+            <div class="clause" id="whenList"></div>
+
+            <div class="clauseHead then" id="thenHead">THEN</div>
+            <div class="clause" id="thenList"></div>
+
+            <div class="ruleFoot" id="ruleFoot">conditions and actions are rows in a table — changing who answers what is a setting, not a deploy</div>
+          </div>
+
+          <div class="col lanes-col" id="colLanes">
+            <div class="colHead"><span>inbound</span><span id="laneCount">0 of 3 resolved</span></div>
+            <div class="lanes" id="lanes"></div>
+          </div>
+
+          <div class="col queues" id="colQueues">
+            <div class="colHead"><span>queues</span><span>depth</span></div>
+            <div class="qbList" id="qbList"></div>
+            <div class="qbNote" id="qbNote">no agent available — overflow takes it</div>
+          </div>
+
+        </div>
+
+        <div class="miniRail" id="miniRail">
+          <span class="chip is-model">trigger conditions</span>
+          <span class="chip">automated actions</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  // The site's progress pill and Skip button sit over the top-right of a phone
+  // frame, so the portrait caption has to stop short of them.
+  const command = () =>
+    matchMedia('(max-aspect-ratio: 3/4)').matches
+      ? 'route the inbound'
+      : 'route the inbound — one rule, three outcomes';
+
+  const board = $('board'), typed = $('typed'), caret = $('caret');
+
+  // An invented rule, in the shape the real one takes: conditions joined by
+  // AND, then actions applied in order.
+  const WHEN = [
+    ['when', 'channel is <b>web chat</b>'],
+    ['and', 'message matches <b>invoice | billing</b>'],
+    ['and', 'outside <b>09:00–18:00</b>'],
+  ];
+  $('whenList').innerHTML = WHEN.map(([k, t]) =>
+    `<div class="cRow"><span class="k">${k}</span><span>${t}</span></div>`).join('');
+  const whenRows = Array.from($('whenList').children);
+
+  const THEN = [
+    ['do', 'reply with <b>billing-after-hours</b>'],
+    ['do', 'tag <b>billing</b>'],
+    ['do', 'route to <b>Billing</b>'],
+  ];
+  $('thenList').innerHTML = THEN.map(([k, t]) =>
+    `<div class="cRow act"><span class="k">${k}</span><span>${t}</span></div>`).join('');
+  const thenRows = Array.from($('thenList').children);
+
+  // Three conversations, one per branch the rule set can produce. The chip
+  // starts at the left edge and its position is a function of p, so every
+  // frame of the travel is reproducible.
+  const LANES = [
+    ['C-2503', 'matched · auto-reply', 'auto-replied · closed', 'ok', 0.46],
+    ['C-2511', 'matched · in hours', 'queued · Billing', 'route', 0.51],
+    ['C-2517', 'no match · keyword', 'escalated · live agent', 'esc', 0.56],
+  ];
+  $('lanes').innerHTML = LANES.map(([id, label, out, cls]) => `
+    <div class="lane">
+      <div class="laneLabel"><span>${id}</span><span>${label}</span></div>
+      <div class="laneTrack">
+        <div class="rail"></div>
+        <div class="conv">${id}</div>
+        <div class="outcome ${cls}">${out}</div>
+      </div>
+    </div>`).join('');
+  const laneEls = Array.from($('lanes').children);
+  const convs = laneEls.map((el) => el.querySelector('.conv'));
+  const outcomes = laneEls.map((el) => el.querySelector('.outcome'));
+
+  // Overflow is deliberately the small one: it is the queue that exists only
+  // because the other two ran out of people.
+  const QUEUES = [
+    ['Billing', 7, 8],
+    ['Support', 3, 8],
+    ['Overflow', 2, 2],
+  ];
+  $('qbList').innerHTML = QUEUES.map(([name, n, cap]) => `
+    <div class="qb">
+      <div class="qbTop"><span>${name}</span><span><b class="n">0</b> / ${cap}</span></div>
+      <div class="qbBar"><div class="qbFill" style="width:0%"></div></div>
+    </div>`).join('');
+  const qbEls = Array.from($('qbList').children);
+
+  const colRule = $('colRule'), colLanes = $('colLanes'), colQueues = $('colQueues');
+  const laneCount = $('laneCount');
+
+  function reveal(el, t, lift) {
+    el.style.opacity = t;
+    el.style.transform = `translateY(${(1 - t) * (lift == null ? 14 : lift)}px)`;
+  }
+
+  defineScene(function (p) {
+
+    // 0.01–0.09 — the caption types itself out.
+    const text = command();
+    typed.textContent = text.slice(0, Math.round(seg(p, 0.01, 0.09) * text.length));
+    caret.style.opacity = p > 0.13 ? 0 : (Math.floor(p * 44) % 2 ? 0.25 : 1);
+
+    // 0.03–0.16 — the rule column first; it is what the rest is about.
+    reveal(colRule, seg(p, 0.03, 0.13), 16);
+    reveal(colLanes, seg(p, 0.38, 0.48), 16);
+    reveal(colQueues, seg(p, 0.62, 0.72), 16);
+    colRule.classList.toggle('is-lead', p < 0.44);
+    colLanes.classList.toggle('is-lead', p >= 0.44 && p < 0.74);
+    colQueues.classList.toggle('is-lead', p >= 0.74);
+
+    // 0.10–0.34 — the conditions, one at a time.
+    reveal($('whenHead'), seg(p, 0.09, 0.15), 6);
+    whenRows.forEach((row, k) => reveal(row, seg(p, 0.12 + k * 0.055, 0.21 + k * 0.055), 7));
+
+    // 0.30–0.48 — then what it does about them.
+    reveal($('thenHead'), seg(p, 0.28, 0.34), 6);
+    thenRows.forEach((row, k) => reveal(row, seg(p, 0.30 + k * 0.05, 0.39 + k * 0.05), 7));
+    reveal($('ruleFoot'), seg(p, 0.46, 0.54), 6);
+
+    // 0.46–0.76 — each conversation runs its lane and lands on its branch.
+    // 6% to 78% keeps the chip clear of the outcome badge at the right edge.
+    let resolved = 0;
+    laneEls.forEach((el, k) => {
+      const start = LANES[k][4];
+      reveal(el, seg(p, start - 0.06, start + 0.02), 8);
+      const t = seg(p, start, start + 0.18);
+      convs[k].style.left = `${6 + t * 72}%`;
+      convs[k].style.opacity = 1 - seg(p, start + 0.16, start + 0.21);
+      const landed = seg(p, start + 0.15, start + 0.21);
+      outcomes[k].style.opacity = landed;
+      outcomes[k].style.transform = `translateY(-50%) scale(${(0.9 + landed * 0.1).toFixed(3)})`;
+      if (landed > 0.5) resolved += 1;
+    });
+    laneCount.textContent = `${resolved} of 3 resolved`;
+
+    // 0.68–0.92 — the queues fill, and the one with no capacity left goes amber.
+    qbEls.forEach((el, k) => {
+      const [, n, cap] = QUEUES[k];
+      const t = seg(p, 0.68 + k * 0.045, 0.82 + k * 0.045);
+      const shown = Math.round(t * n);
+      el.querySelector('.n').textContent = shown;
+      el.querySelector('.qbFill').style.width = `${(shown / cap) * 100}%`;
+      el.classList.toggle('is-full', shown >= cap);
+    });
+    reveal($('qbNote'), seg(p, 0.88, 0.95), 6);
+
+    // Continuous slow push-in so no stretch of the clip is a frozen frame.
+    const settle = seg(p, 0.90, 1);
+    const scale = 1 + p * 0.042 - settle * 0.012;
+    board.style.transform = `translateY(${(0.5 - p) * 22}px) scale(${scale.toFixed(4)})`;
+
+  });
+})();
+</script>
+</body>
+</html>

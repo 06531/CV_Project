@@ -5,7 +5,7 @@
 
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
-import { chromium, devices } from 'playwright';
+import { gotoOrExit, launchCheck } from './lib/browser.mjs';
 
 const [out, url, mode] = process.argv.slice(2);
 if (!out || !url) {
@@ -15,13 +15,11 @@ if (!out || !url) {
 
 mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
 
-const viewport =
-  mode === 'mobile' ? { ...devices['iPhone 13'] } : { viewport: { width: 1440, height: 900 } };
-
-const browser = await chromium.launch();
-const context = await browser.newContext(viewport);
-const page = await context.newPage();
-await page.goto(url, { waitUntil: 'networkidle' });
+// Same context the checks run in, motion included — a screenshot taken to
+// eyeball a scroll-world is worthless if the browser told the page to hold
+// still and the page obliged.
+const { browser, page } = await launchCheck({ mode });
+await gotoOrExit(page, url, { browser });
 await page.waitForTimeout(2500);
 await page.screenshot({ path: out });
 await browser.close();

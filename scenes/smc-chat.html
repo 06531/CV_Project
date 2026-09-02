@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>smc-chat — scroll-world explainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="scene.css">
+<script src="shell.js"></script>
+<style>
+  /* One conversation from the moment it lands to the moment the agent has the
+     customer's history open beside it. Three columns: the queue it waits in,
+     the console the agent works in, the profile that opens on demand.
+
+     Nothing here is a screenshot. The system is a client's production contact
+     centre, so the console is drawn from the description and every id, queue
+     and message is invented. Shared shell lives in scene.css. */
+  :root {
+    --s-live: #b45309;    /* waiting — amber, not alarm */
+    --s-in: #64748b;      /* inbound bubble */
+  }
+
+  /* Three columns of text want more width than a device mock does, but less
+     than the shared 1000px: at the full default the middle column stretches
+     and the bubbles stop reading as a conversation. */
+  #board { max-width: 900px; }
+
+  /* The board has to finish by ~66% of a landscape frame — below that it runs
+     under the scroll-world's copy. Portrait keeps scene.css's own 12px;
+     overriding it unguarded would win on order. */
+  @media (min-aspect-ratio: 3/4) {
+    .body { padding: clamp(16px, 2.3vmin, 24px); }
+  }
+
+  .console {
+    display: grid;
+    grid-template-columns: 0.78fr 1.35fr 0.86fr;
+    gap: clamp(8px, 1.4vmin, 16px);
+    align-items: start;
+    margin-top: clamp(10px, 1.5vmin, 16px);
+  }
+
+  .col {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface);
+    padding: clamp(7px, 1vmin, 11px) clamp(8px, 1.1vmin, 12px);
+    min-height: clamp(150px, 24vmin, 208px);
+  }
+  .col.is-lead { border-color: var(--accent); box-shadow: 0 12px 34px -20px rgba(13, 116, 144, .5); }
+
+  .colHead {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    font-family: var(--mono);
+    font-size: clamp(9px, .98vmin, 11.5px);
+    text-transform: uppercase; letter-spacing: .07em;
+    color: var(--muted);
+    padding-bottom: clamp(5px, .7vmin, 8px);
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* ---- left · the queue ---- */
+  .qList { display: flex; flex-direction: column; gap: clamp(4px, .6vmin, 7px); margin-top: clamp(6px, .9vmin, 10px); }
+  .qRow {
+    display: flex; align-items: center; gap: 6px;
+    padding: clamp(5px, .7vmin, 8px) clamp(6px, .8vmin, 9px);
+    border: 1px solid var(--line); border-radius: 7px;
+    background: var(--surface-2);
+    font-family: var(--mono); font-size: clamp(9px, 1vmin, 11.5px);
+  }
+  .qRow .id { font-weight: 700; color: var(--ink); }
+  .qRow .wait { margin-left: auto; color: var(--s-live); }
+  .qRow.is-taken { background: var(--accent-soft); border-color: transparent; }
+  .qRow.is-taken .wait { color: var(--accent); font-weight: 700; }
+  .qDot { width: 6px; height: 6px; border-radius: 50%; background: var(--s-live); flex: none; }
+  .qRow.is-taken .qDot { background: var(--accent); }
+
+  /* ---- middle · the agent console ---- */
+  .chatHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .agentChip {
+    font-family: var(--mono); font-size: clamp(8.5px, .92vmin, 10.5px);
+    padding: 3px 7px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--surface-2); color: var(--muted);
+    white-space: nowrap;
+  }
+  .agentChip.is-on { background: var(--accent-soft); border-color: transparent; color: var(--accent); font-weight: 700; }
+
+  .msgs { display: flex; flex-direction: column; gap: clamp(4px, .6vmin, 7px); margin-top: clamp(7px, 1vmin, 11px); }
+  .msg { display: flex; align-items: flex-end; gap: 5px; max-width: 86%; }
+  .msg.out { align-self: flex-end; flex-direction: row-reverse; }
+  .bubble {
+    padding: clamp(5px, .68vmin, 8px) clamp(7px, .95vmin, 11px);
+    border-radius: 10px;
+    font-size: clamp(9.5px, 1.05vmin, 12px);
+    line-height: 1.4;
+  }
+  .msg.in .bubble { background: var(--surface-2); color: var(--ink); border-bottom-left-radius: 3px; }
+  .msg.out .bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 3px; }
+  /* The arrow is the point of the scene: every line moved on the socket that
+     was already open, not on a request the page went and made. */
+  .wsTick {
+    font-family: var(--mono); font-size: clamp(7.5px, .82vmin, 9.5px);
+    color: var(--muted); flex: none; letter-spacing: .04em;
+  }
+
+  .composer {
+    margin-top: clamp(7px, 1vmin, 11px);
+    display: flex; align-items: center; gap: 6px;
+    padding: clamp(5px, .7vmin, 8px) clamp(7px, .9vmin, 10px);
+    border: 1px solid var(--line); border-radius: 8px;
+    background: var(--surface-2);
+    font-family: var(--mono); font-size: clamp(9px, .98vmin, 11px); color: var(--muted);
+  }
+  .composer .bar { margin-left: auto; width: clamp(26px, 4vmin, 42px); height: 4px; border-radius: 3px; background: var(--line); }
+
+  /* Pushed, not polled — so it arrives while the agent is mid-sentence. */
+  .toast {
+    margin-top: clamp(6px, .85vmin, 9px);
+    display: flex; align-items: center; gap: 6px;
+    padding: clamp(5px, .7vmin, 8px) clamp(7px, .9vmin, 10px);
+    border-radius: 8px;
+    background: var(--accent-soft);
+    font-family: var(--mono); font-size: clamp(8.5px, .95vmin, 11px); color: var(--accent);
+    font-weight: 700;
+  }
+
+  /* ---- right · the profile the agent opens mid-conversation ---- */
+  .profId {
+    margin-top: clamp(6px, .9vmin, 10px);
+    font-family: var(--mono); font-size: clamp(10px, 1.15vmin, 13px); font-weight: 700;
+  }
+  .profSub { margin-top: 2px; font-size: clamp(8.5px, .92vmin, 10.5px); color: var(--muted); }
+  .histList { display: flex; flex-direction: column; gap: clamp(3px, .45vmin, 5px); margin-top: clamp(7px, 1vmin, 11px); }
+  .histRow {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: clamp(8.5px, .92vmin, 10.5px); color: var(--muted);
+    padding: clamp(3px, .45vmin, 5px) 0;
+    border-bottom: 1px dashed var(--line);
+  }
+  .histRow .ch { color: var(--accent); font-weight: 700; }
+  .histRow .when { margin-left: auto; }
+  .noteBox {
+    margin-top: clamp(7px, 1vmin, 11px);
+    padding: clamp(5px, .7vmin, 8px) clamp(6px, .85vmin, 9px);
+    border: 1px dashed var(--accent); border-radius: 7px;
+    font-family: var(--mono); font-size: clamp(8.5px, .92vmin, 10.5px); color: var(--ink);
+    min-height: 2.6em;
+  }
+  .noteBox .lbl { color: var(--muted); }
+
+  /* ---- the socket counter under the whole board ---- */
+  .wsFoot {
+    display: flex; align-items: center; justify-content: center; gap: clamp(10px, 1.6vmin, 18px);
+    margin-top: clamp(8px, 1.2vmin, 13px);
+    font-family: var(--mono); font-size: clamp(9px, .98vmin, 11.5px); color: var(--muted);
+  }
+  .wsFoot b { color: var(--accent); font-weight: 700; }
+
+  .miniRail { display: none; }
+
+  /* Portrait drops the queue and the profile: three columns of 9px monospace
+     at 360px wide is four columns of nothing. The conversation is the part
+     worth keeping, and the scene's copy already names the other two. */
+  @media (max-aspect-ratio: 3/4) {
+    .console { grid-template-columns: 1fr; gap: 0; margin-top: 6px; }
+    .col.queue, .col.prof { display: none; }
+    .col { min-height: 0; padding: 9px 10px; }
+    .msg { max-width: 92%; }
+    .bubble { font-size: 11px; }
+    .wsTick { font-size: 8.5px; }
+    .composer { display: none; }
+    .wsFoot { margin-top: 8px; font-size: 10px; }
+    .miniRail {
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 4px;
+      margin-top: 8px;
+    }
+    .miniRail .chip { font-size: 10px; padding: 3px 7px; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="board">
+    <div class="window">
+      <div class="titlebar">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="name">agent console · live chat</span>
+      </div>
+      <div class="body">
+        <div class="prompt"><span class="sigil">$</span> <span id="typed"></span><span class="caret" id="caret"></span></div>
+
+        <div class="console">
+
+          <div class="col queue" id="colQueue">
+            <div class="colHead"><span>queue</span><span id="qDepth">3 waiting</span></div>
+            <div class="qList" id="qList"></div>
+          </div>
+
+          <div class="col chat" id="colChat">
+            <div class="chatHead">
+              <div class="colHead" style="border:0; padding:0; flex:1"><span>C-2481 · web chat</span></div>
+              <span class="agentChip" id="agentChip">agent · available</span>
+            </div>
+            <div class="msgs" id="msgs"></div>
+            <div class="composer" id="composer">reply<span class="bar"></span></div>
+            <div class="toast" id="toast">transfer requested — pushed, not polled</div>
+          </div>
+
+          <div class="col prof" id="colProf">
+            <div class="colHead"><span>customer</span><span>profile</span></div>
+            <div class="profId">CUS-40912</div>
+            <div class="profSub">verified · 3 prior interactions</div>
+            <div class="histList" id="histList"></div>
+            <div class="noteBox"><span class="lbl">note</span> <span id="noteText"></span></div>
+          </div>
+
+        </div>
+
+        <div class="wsFoot" id="wsFoot">
+          <span>one socket, both directions</span>
+          <span>▲ <b id="wsUp">0</b> sent</span>
+          <span>▼ <b id="wsDown">0</b> received</span>
+        </div>
+
+        <div class="miniRail" id="miniRail">
+          <span class="chip is-model">websocket</span>
+          <span class="chip">profile + history</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  // The site's progress pill and Skip button sit over the top-right of a phone
+  // frame, so the portrait caption has to stop short of them.
+  const command = () =>
+    matchMedia('(max-aspect-ratio: 3/4)').matches
+      ? 'take the next conversation'
+      : 'take the next conversation — queue to agent';
+  /** Visible between `start` and `end`, cross-dissolving over `fade`. */
+  const band = (p, start, end, fade) => Math.min(seg(p, start, start + fade), 1 - seg(p, end, end + fade));
+
+  const board = $('board'), typed = $('typed'), caret = $('caret');
+
+  // Every conversation, customer and queue on this board is invented. The real
+  // system is a client's production contact centre and none of it is filmed.
+  const QUEUE = [
+    ['C-2481', 'web chat', '0:42'],
+    ['C-2483', 'messaging', '1:07'],
+    ['C-2486', 'callback', '2:15'],
+  ];
+  $('qList').innerHTML = QUEUE.map(([id, ch, wait]) =>
+    `<div class="qRow"><span class="qDot"></span><span class="id">${id}</span><span>${ch}</span><span class="wait">${wait}</span></div>`
+  ).join('');
+  const qRows = Array.from($('qList').children);
+
+  // Alternating, so the ▲ / ▼ column reads as traffic rather than decoration.
+  const MSGS = [
+    ['in', 'My invoice for March has not arrived.'],
+    ['out', 'Let me pull up the account now.'],
+    ['in', 'It is the second month this happened.'],
+    ['out', 'I can see both. Resending them together.'],
+  ];
+  $('msgs').innerHTML = MSGS.map(([dir, text]) =>
+    `<div class="msg ${dir}"><div class="bubble">${text}</div><span class="wsTick">${dir === 'in' ? '▼' : '▲'} ws</span></div>`
+  ).join('');
+  const msgRows = Array.from($('msgs').children);
+
+  const HIST = [
+    ['web chat', 'billing', 'Feb'],
+    ['callback', 'billing', 'Jan'],
+    ['messaging', 'sign-up', 'Nov'],
+  ];
+  $('histList').innerHTML = HIST.map(([ch, topic, when]) =>
+    `<div class="histRow"><span class="ch">${ch}</span><span>${topic}</span><span class="when">${when}</span></div>`
+  ).join('');
+  const histRows = Array.from($('histList').children);
+
+  const NOTE = 'duplicate invoice — resent';
+
+  const colQueue = $('colQueue'), colChat = $('colChat'), colProf = $('colProf');
+  const agentChip = $('agentChip'), qDepth = $('qDepth'), toast = $('toast');
+  const noteText = $('noteText'), wsUp = $('wsUp'), wsDown = $('wsDown');
+
+  function reveal(el, t, lift) {
+    el.style.opacity = t;
+    el.style.transform = `translateY(${(1 - t) * (lift == null ? 14 : lift)}px)`;
+  }
+
+  defineScene(function (p) {
+
+    // 0.01–0.09 — the caption types itself out.
+    const text = command();
+    typed.textContent = text.slice(0, Math.round(seg(p, 0.01, 0.09) * text.length));
+    caret.style.opacity = p > 0.13 ? 0 : (Math.floor(p * 44) % 2 ? 0.25 : 1);
+
+    // 0.03–0.16 — the console arrives left to right.
+    reveal(colQueue, seg(p, 0.03, 0.13), 16);
+    reveal(colChat, seg(p, 0.06, 0.16), 16);
+    // The profile column is not part of the arrival; it opens later, on demand.
+    reveal(colProf, seg(p, 0.60, 0.70), 16);
+
+    // 0.06–0.24 — three conversations waiting, longest first.
+    qRows.forEach((row, k) => reveal(row, seg(p, 0.06 + k * 0.05, 0.17 + k * 0.05), 8));
+
+    // 0.20–0.30 — the top one is taken, and the queue is one shorter.
+    const taken = p > 0.24;
+    qRows[0].classList.toggle('is-taken', taken);
+    if (taken) qRows[0].lastElementChild.textContent = 'assigned';
+    else qRows[0].lastElementChild.textContent = QUEUE[0][2];
+    qDepth.textContent = taken ? '2 waiting' : '3 waiting';
+
+    // 0.24–0.32 — and the agent stops being available.
+    const onChat = p > 0.28;
+    agentChip.textContent = onChat ? 'agent · on chat' : 'agent · available';
+    agentChip.classList.toggle('is-on', onChat);
+    colChat.classList.toggle('is-lead', onChat && p < 0.62);
+
+    // 0.35–0.62 — four lines, alternating, each marked with the direction it
+    // travelled. No polling anywhere in this scene.
+    msgRows.forEach((row, k) => reveal(row, seg(p, 0.35 + k * 0.055, 0.44 + k * 0.055), 7));
+    reveal($('composer'), seg(p, 0.40, 0.50), 6);
+
+    // 0.62–0.86 — history, then the note the agent logs against the profile.
+    colProf.classList.toggle('is-lead', p >= 0.62 && p < 0.86);
+    histRows.forEach((row, k) => reveal(row, seg(p, 0.66 + k * 0.04, 0.74 + k * 0.04), 6));
+    noteText.textContent = NOTE.slice(0, Math.round(seg(p, 0.78, 0.88) * NOTE.length));
+
+    // 0.86–1.00 — a system notification arrives down the same socket.
+    reveal(toast, band(p, 0.88, 1.4, 0.04), 8);
+
+    // The counters run the length of the conversation so the socket reads as
+    // open the whole time, not as one request per bubble.
+    reveal($('wsFoot'), seg(p, 0.30, 0.40), 8);
+    wsUp.textContent = Math.round(seg(p, 0.32, 0.95) * 11);
+    wsDown.textContent = Math.round(seg(p, 0.30, 0.95) * 14);
+
+    // Continuous slow push-in so no stretch of the clip is a frozen frame.
+    const settle = seg(p, 0.90, 1);
+    const scale = 1 + p * 0.042 - settle * 0.012;
+    board.style.transform = `translateY(${(0.5 - p) * 22}px) scale(${scale.toFixed(4)})`;
+
+  });
+})();
+</script>
+</body>
+</html>

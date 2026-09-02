@@ -18,32 +18,38 @@ export interface WorldScene {
   clip: string;
   /** Lighter, shorter-GOP encode served to phones. */
   clipMobile: string;
-  /** Shown until the video paints, and the only visual under reduced-motion. */
+  /** Frame one. Shown behind the clip until the video paints. */
   poster: string;
-  /** How many viewport-heights of scroll this scene occupies. */
-  scroll: number;
   /**
-   * 0..1 — remaps scroll to clip time so the camera settles mid-scene, right
-   * where the copy peaks, and moves quicker near the seams. 0 = linear.
+   * Last frame — the finished board, not the empty stage the film opens on.
+   * This is the scene under reduced motion, where nothing is going to draw
+   * itself and a still has to carry the whole explanation on its own.
    */
-  linger: number;
+  still: string;
   /** Links to the portfolio entry this scene is about, if any. */
   project?: ProjectSlug;
 }
 
-const scene = (id: string, kind: WorldScene['kind'], rest: Omit<WorldScene, 'id' | 'kind' | 'clip' | 'clipMobile' | 'poster'>): WorldScene => ({
+const scene = (
+  id: string,
+  kind: WorldScene['kind'],
+  /** Only `project` is left here, and no deck sets it today: a scene inside a
+   *  case study is already on that project's page. */
+  rest: Omit<WorldScene, 'id' | 'kind' | 'clip' | 'clipMobile' | 'poster' | 'still'> = {},
+): WorldScene => ({
   id,
   kind,
   clip: `/world/${id}.mp4`,
   clipMobile: `/world/${id}-m.mp4`,
   poster: `/world/${id}.jpg`,
+  still: `/world/${id}-still.jpg`,
   ...rest,
 });
 
 /** The deck that opens `/portfolio` — how the work gets made, not what it is. */
 export const INTRO_WORLD: WorldScene[] = [
-  scene('agents', 'explainer', { scroll: 2.1, linger: 0.35 }),
-  scene('agents-handoff', 'explainer', { scroll: 1.9, linger: 0.35 }),
+  scene('agents', 'explainer'),
+  scene('agents-handoff', 'explainer'),
 ];
 
 /** One deck per project, played at the top of its case study. */
@@ -52,45 +58,56 @@ export const PROJECT_WORLDS: Partial<Record<ProjectSlug, WorldScene[]>> = {
     // The product is real, here it is — six screens, cut rather than panned,
     // from the public directory through to the platform admin. Longer than the
     // single page it replaced, but still the shortest of the three.
-    scene('schedule-tour', 'app', { scroll: 1.3, linger: 0.25 }),
-    scene('schedule-tenancy', 'explainer', { scroll: 1.7, linger: 0.4 }),
-    scene('schedule-booking', 'explainer', { scroll: 1.7, linger: 0.4 }),
+    scene('schedule-tour', 'app'),
+    scene('schedule-tenancy', 'explainer'),
+    scene('schedule-booking', 'explainer'),
   ],
+  // Explainers for the strictest reason of the five: SMC is a client's
+  // production contact centre and the current job, so there is nothing here it
+  // would be right to film. Every id, queue and path in the three is invented.
+  smc: [
+    scene('smc-chat', 'explainer'),
+    scene('smc-routing', 'explainer'),
+    scene('smc-report', 'explainer'),
+  ],
+  // Explainers, for the same reason as SMC's: the platform is a former
+  // employer's, and the environment that could be reached is a real customer's
+  // data in a test database. The opener was a film of it once; the desk in it
+  // is drawn now, folder id and all.
   otto: [
-    scene('otto-tour', 'app', { scroll: 0.9, linger: 0.25 }),
-    scene('otto-flow', 'explainer', { scroll: 1.7, linger: 0.4 }),
-    scene('otto-control', 'explainer', { scroll: 1.7, linger: 0.4 }),
+    scene('otto-desk', 'explainer'),
+    scene('otto-flow', 'explainer'),
+    scene('otto-control', 'explainer'),
   ],
   // All three are explainers — the kiosks run against an intranet WMS this
   // repo cannot reach, so there is no tour beat to open with. The device in
   // the first two is a mock of the real unit, drawn from its source.
   kiosk: [
-    scene('kiosk-flow', 'explainer', { scroll: 1.8, linger: 0.4 }),
-    scene('kiosk-desk', 'explainer', { scroll: 1.8, linger: 0.4 }),
-    scene('kiosk-fleet', 'explainer', { scroll: 1.5, linger: 0.4 }),
+    scene('kiosk-flow', 'explainer'),
+    scene('kiosk-desk', 'explainer'),
+    scene('kiosk-fleet', 'explainer'),
   ],
   // Explainers too, for a harder reason than the kiosks': both of Startie's
   // deployments are gone and the repo was never pushed, so the four pages of
   // the CV are the only surviving record of it.
   startie: [
-    scene('startie-setup', 'explainer', { scroll: 1.8, linger: 0.4 }),
-    scene('startie-money', 'explainer', { scroll: 1.7, linger: 0.4 }),
-    scene('startie-stack', 'explainer', { scroll: 1.5, linger: 0.4 }),
+    scene('startie-setup', 'explainer'),
+    scene('startie-money', 'explainer'),
+    scene('startie-stack', 'explainer'),
   ],
 };
 
-/** Seam dissolve width, in viewport heights. */
-export const WORLD_CROSSFADE = 0.12;
-
 /**
- * Trailing band, in viewport heights, where the whole stage dissolves before
- * the sticky container lets go. Without it the last frame is still at full
- * opacity when the browser starts scrolling the stage away, and the reader
- * gets half a picture sliding over the page beneath it.
+ * Projects whose gallery is these boards rather than screenshots.
+ *
+ * `scripts/encode-world-clips.mjs` cuts `public/portfolio/<slug>-N.jpg` out of
+ * each scene's last frame, in deck order, and `PROJECTS` in `cv.ts` builds its
+ * image list off the same deck — so the pictures on the page and the pictures
+ * on disk cannot drift apart, and adding a scene adds a gallery tile.
+ *
+ * Both entries are here for the same reason: neither system is mine to film.
+ * SMC is a client's production contact centre; OTTO is a former employer's
+ * platform, and the one environment that can be reached holds a real
+ * customer's data however synthetic that environment is called.
  */
-export const WORLD_OUTRO_VH = 0.6;
-
-/** Total track height, in viewport heights, including the outro band. */
-export function worldHeightVh(scenes: WorldScene[]) {
-  return scenes.reduce((sum, s) => sum + s.scroll, 0) + WORLD_OUTRO_VH;
-}
+export const BOARD_SHOT_WORLDS = ['smc', 'otto'] as const satisfies readonly ProjectSlug[];

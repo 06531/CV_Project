@@ -49,13 +49,15 @@ Both generators are idempotent (they skip files that already exist; pass `--forc
 
 ## Scroll-worlds
 
-Each case study opens with a short scroll-scrubbed film, and `/portfolio` opens with one about
-how the work gets made. They are not screen recordings: every scene is broken into 140 discrete
-states, screenshotted one at a time, and encoded with a very short GOP, so scrubbing by scroll
-position lands on an exact frame with no seek stutter.
+Each case study opens with a short film, and `/portfolio` opens with one about how the work
+gets made. Every deck plays itself: one screen tall, starting on arrival, with Skip in the
+corner and Replay when it stops. They are not screen recordings — every scene is broken into
+140 discrete states and screenshotted one at a time, which is what makes a re-capture
+reproducible frame for frame.
 
 - `scenes/manifest.mjs` is the single list of scenes. `src/data/world.ts` is its front-end twin:
-  which deck plays where, how much scroll each scene gets, and how the clip time is eased.
+  which deck plays where. Importing the manifest fails if the two disagree about which scenes
+  exist.
 - Two kinds of scene. **`explainer`** is a self-contained `scenes/<id>.html` that renders as a
   pure function of `window.__setFrame(i, total)` — no CSS animation, no timers, no randomness,
   or the frames would not be reproducible. **`app`** boots a real product from `APPS` and pans
@@ -80,18 +82,16 @@ npm run build && npx next start -p 3001
 npm run check          # all of the below, desktop and mobile
 ```
 
-- **`check:world`** — the scrub deck at `/en/portfolio`: does each clip actually scrub, is the
-  stage fully dissolved before the sticky container lets go, is the content below clickable.
-- **`check:case`** — a case study's film at `/en/portfolio/schedule`, which plays itself instead.
-  Three phases, each guarding a bug this page has shipped: it plays on *every* arrival rather
-  than opening on a dead Replay button; scrolling out during the opening beat does not leave a
-  Play button painted over a running film; and Replay rewinds all of it, not half.
+- **`check:index`** / **`check:case`** — the deck at `/en/portfolio` and a case study's at
+  `/en/portfolio/schedule`. Same script, because both play themselves. Three phases, each
+  guarding a bug these pages have shipped: it plays on *every* arrival rather than opening on a
+  dead Replay button; scrolling out during the opening beat does not leave a Play button
+  painted over a running film; and Replay rewinds all of it, not half.
 - **`check:assets`** — every schedule still and both tour clips stay light. This is the
   fingerprint of a capture that skipped `setTheme`, i.e. the stills and the film drifting onto
   different tenants — see the `TENANT` block in `capture-world-frames.mjs`.
 
-Each takes `[url] [desktop|mobile]` (`check:world` takes an output directory first) and exits
-non-zero on failure. `npm run shot -- .shots/x.png http://localhost:3001/en/portfolio mobile`
+Each takes `[url] [desktop|mobile]` and exits non-zero on failure. `npm run shot -- .shots/x.png http://localhost:3001/en/portfolio mobile`
 grabs a single frame.
 
 ## Deploying

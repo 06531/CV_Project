@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="scene.css">
+<script src="shell.js"></script>
 <style>
   /* Beat one of the AI workflow: one prompt picks a role out of a nine-strong
      bench, and a difficulty grade picks the model that runs it.
@@ -101,11 +102,7 @@
 <script>
 (function () {
   const COMMAND = 'hand off to IT team: add a portfolio project';
-  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
-  // Smoothstep over an arbitrary window of the timeline.
-  const seg = (p, from, to) => { const x = clamp((p - from) / (to - from), 0, 1); return x * x * (3 - 2 * x); };
 
-  const $ = (id) => document.getElementById(id);
   const board = $('board'), typed = $('typed'), caret = $('caret');
   const cardDispatch = $('cardDispatch'), wirePick = $('wirePick');
 
@@ -168,11 +165,7 @@
     el.style.transform = `translateY(${(1 - t) * (lift == null ? 14 : lift)}px)`;
   }
 
-  let last = { i: 0, total: 2 };
-
-  window.__setFrame = function (i, total) {
-    last = { i, total };
-    const p = total > 1 ? clamp(i / (total - 1), 0, 1) : 0;
+  defineScene(function (p) {
     wirePath();
 
     // 0.00–0.18 — the command types itself out.
@@ -218,11 +211,7 @@
     const scale = 1 + p * 0.05 - settle * 0.012;
     board.style.transform = `translateY(${(0.5 - p) * 26}px) scale(${scale.toFixed(4)})`;
 
-    document.documentElement.dataset.frame = String(i);
-  };
-
-  window.__setFrame(0, 2);
-  window.addEventListener('resize', () => window.__setFrame(last.i, last.total));
+  });
 })();
 </script>
 </body>

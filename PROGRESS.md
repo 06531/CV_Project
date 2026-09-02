@@ -1,6 +1,7 @@
 # CV 網站 — 進度
 
-**最後更新:** 2026-08-06(已上線 https://kevin-wu-cv.vercel.app;資產壓細;首頁 scroll / 內頁自動播)
+**最後更新:** 2026-09-03(已上線 https://kevin-wu-cv.vercel.app;所有 scroll-world 一律自動播;
+OTTO 同 SMC 兩個 project 完全唔用真畫面)
 **技術棧:** Next.js 16 (App Router) + React 19 + TypeScript + Tailwind CSS v4 + next-intl + next-themes
 
 ## 目標
@@ -11,13 +12,22 @@
 
 ### 基本網站
 - Next.js 16 專案 scaffold(`src/` + App Router + Tailwind v4),`CV.pdf` 原檔保留
-- `scripts/render-pdf-pages.mjs`:用 macOS PDFKit(JXA)render CV.pdf p.3–9 → `public/portfolio/*.jpg`
+- `scripts/render-pdf-pages.mjs`:用 macOS PDFKit(JXA)render CV.pdf p.5–9 → `public/portfolio/*.jpg`
+  (p.3–4 係 OTTO 兩版,成版都係真系統截圖,而家唔再 render —— 見下面「OTTO 換走真畫面」)
 - `scripts/capture-schedule.mjs`:借用 `../schedule_project` 現成 e2e harness 影 desktop + mobile 各 9 張
 - 內容分層:`src/data/cv.ts` 只放結構,文字全部喺 `messages/en.json` 同 `messages/zh-HK.json`
 - i18n(`en` / `zh-HK`,`src/proxy.ts` + next-intl)、深淺色主題、RWD、`@media print`
 - Backend:`GET /api/cv?locale=`、`GET /api/cv/download`
 
 ### Scroll-world(今次大改)
+- **淨返一個播放引擎:全部自動播** —— `/portfolio` 個開場以前要用 scroll 拖(`ScrollWorld`,
+  4vh track + sticky stage + 一 session 播一次嘅 `seenKey` 掣),而家同 case study 一樣
+  用 `AutoWorld`:一個螢幕高、入到就播、右上角 Skip、播完 Replay。
+  順手刪走 `ScrollWorld.tsx`、`world-check.mjs`、`scroll` / `linger` / `WORLD_CROSSFADE` /
+  `WORLD_OUTRO_VH` / `worldHeightVh` / `lingerEase`,`WorldStage` 淨返個空 deck 守門。
+  encode 唔再分 GOP(統一 30),兩條 intro clip 重 encode 之後細咗一半
+  (`agents-m.mp4` 429KB → 204KB)。check 由 `check:world` 改做 `check:index`,同 case 共用
+  `case-check.mjs`
 - **由「/portfolio 開場兩幕」改成「每個 project 一疊」** —— `PROJECT_WORLDS` / `INTRO_WORLD`
   (`src/data/world.ts`),`ScrollWorld` 收 `scenes` + `seenKey` prop,
   `WorldStage` 管「一 session 播一次 + 重播」(取代舊 `PortfolioIntro`)
@@ -95,6 +105,8 @@
   `body::after` 嘅 `content` 都係 `none`(層都冇建立)
 
 ### OTTO(TDS eDOC)三幕
+> ⚠️ 呢節係歷史記錄。`otto-tour` 同成個 `kind: 'remote'` 已經喺 2026-09-03 拆走,
+> 睇返下面「OTTO 換走真畫面」。
 - `otto-tour` —— **真 UI**,由你自己登入嘅 Chrome 經 CDP 拍(密碼唔經 repo)
 - `otto-flow` / `otto-control` —— 解說段,內容由 `_material/otto/repo` 讀返嚟
   (SPI + 實作分模組、一個貨代一個 out-channel factory、獨立嘅 rule-driven 序號產生器
@@ -111,6 +123,24 @@
 - 拍攝 viewport 對齊顯示比例(桌面 1728×1080、手機 1200×2133),`object-cover` 冇嘢好裁
 - `encode-world-clips.mjs`:修好 keyframe 統計(ffprobe 帶尾逗號,一直報 0),
   加 per-scene `crf`(真 UI 截圖比手畫解說段重幾倍)
+
+### OTTO 換走真畫面(2026-09-03)
+- **`otto-tour` 收檔,改咗做 `otto-desk` 解說段** —— 理由同 SMC 一樣:
+  個平台係前僱主嘅,唯一影到嘅環境入面係真客戶資料,無論個環境叫唔叫 UAT。
+  新一幕畫嘅係「文件檯」:一個資料夾裝住成票貨 → 逐行文件出齊 →
+  一個 filter 落喺 Mode 欄(7 行剩 4 行)→ 海/空/鐵/速遞 25 種文件類型點數上去。
+  入面每個資料夾編號、公司名、文件編號全部虛構
+- **`kind: 'remote'` 整支拆咗** —— manifest 嘅 `REMOTES`(含 UAT URL、真客戶名嘅
+  anonymise / forbidden 清單)同 `capture-world-frames.mjs` 入面約 250 行
+  CDP + 匿名化 + 守尾門一齊刪。OTTO 係佢唯一用家,冇咗就唔再留住嗰啲名喺 repo
+- **Gallery 都唔再用真畫面**:`otto-1/2.jpg` 本來係 CV p.3–4(成版真系統截圖),
+  而家同 SMC 一樣用三幅 board。`render-pdf-pages.mjs` 唔再 render 嗰兩版
+- **board 圖改成 encode 階段自動出**:`BOARD_SHOT_WORLDS`(`src/data/world.ts`)
+  列邊個 project 用 board 做 gallery,`encode-world-clips.mjs` 就由每一幕最後一格
+  裁 1600×626(2.56:1,啱 `aspect-[2.56/1]` 個格)寫落 `public/portfolio/<slug>-N.jpg`,
+  而 `cv.ts` 嘅 `boardGallery()` 由同一個 deck 砌 images —— 兩邊唔會走位。
+  個裁切框係六幅 board 嘅聯集加位,新 board 闊過佢就要調(唔調就靜靜雞裁到邊)
+- 記得跑 `node scripts/version-assets.mjs`:portfolio 圖變咗就要換 `?v=` token
 
 ### CMHK Kiosk 三幕(2026-08-06)
 - 素材:source code `/Users/kevin06531/Documents/kiosk/cmhk-kiosk`(Expo / RN 0.71,60 檔)
@@ -253,32 +283,32 @@
 - 兩幕交接嗰 ~140px scroll 會見到兩段字疊住淡入淡出,係 cross-dissolve,唔係 bug
 - 直度場景頂部喺每幕最尾會有約 9px 被 sticky header 遮到(board 有 ±13px 漂移)
 - `startie` 兩個 host(`ems.s7yr0.com` / `api.s7yr0.com`)已經完全連唔到,source code 亦冇存底 ——
-  `public/portfolio/startie-1..4.jpg` 嗰四版 CV 係僅存嘅記錄,唔好刪。
-  `otto` 嘅 `tds3.tradelinksig.com` 要 CAS 登入
+  `public/portfolio/startie-1..4.jpg` 嗰四版 CV 係僅存嘅記錄,唔好刪
+- `otto` 冇得影都冇得連 —— 系統係前僱主嘅,而家三幕全部係畫出嚟嘅 board
 - ⚠️ **`next dev` 同 `next start` 共用 `.next/`** —— 兩個一齊行,dev 會覆蓋 production
   嘅 static chunks,`next start` 嗰邊個頁面就會 JS 404、component 唔 hydrate,
   scroll-world 完全唔郁但 **console 冇 error**。驗收之前先確認冇 `next dev` 行緊
-- `world-check.mjs` 要明示 `reducedMotion: 'no-preference'` —— 新版 headless Chromium
-  預設報 `prefers-reduced-motion: reduce`,而 `ScrollWorld` 見到就索性唔建 `<video>`,
-  結果個 check 靜靜雞去驗緊 poster fallback(報 `t: []` + `stage opacity 1 ✗`)
+- check script 要明示 `reducedMotion: 'no-preference'`(喺 `scripts/lib/browser.mjs`)——
+  新版 headless Chromium 預設報 `prefers-reduced-motion: reduce`,而 `AutoWorld` 見到就
+  索性唔建 `<video>`,結果個 check 靜靜雞去驗緊 stills fallback
 - Agent 定義唔會熱載入:改完 `.claude/agents/*.md` 要重開 session
 
 ## 驗證方法
 ```bash
 npm run build                 # typecheck + build,現時 21 條 route
 npx next start -p 3001        # 驗收一定要用呢個(見上面 messages 熱載入問題)
-npm run check                 # world + case + assets,desktop 同 mobile 各一次
+npm run check                 # index + case + assets,desktop 同 mobile 各一次
 ```
 `npm run check` 拆開係三支,全部 fail 就 exit 1:
 
 | 指令 | 睇乜 |
 | --- | --- |
-| `check:world` | `/en/portfolio` 嘅 scrub deck:`currentTime` 隨 scroll 單調上升、scroll 返上會跌、`stage opacity at the seam: 0 ✓`、`content below clickable: yes`、冇 page error |
+| `check:index` | `/en/portfolio` 個開場 deck,同下面一樣係自動播,用同一支 script |
 | `check:case` | `/en/portfolio/schedule` 嘅自動播:每次入都播(唔會開喺死掣上)、開場捲走再捲返唔會蓋住粒 Play、播完出 Replay 而且撳完真係全部歸零 |
 | `check:assets` | 18 張 schedule stills + 兩條 tour clip 各 8 格都要夠光 —— 即係擋住 capture 漏咗 `setTheme`、stills 同片走返兩間學校 |
 
-**`check:world` 唔可以指去 case study,`check:case` 亦唔可以指去 `/en/portfolio`** ——
-兩種 deck 機制唔同,指錯咗兩支都會即刻話你知同埋叫你用邊支。
+兩個 deck 而家同一個機制,所以 `case-check.mjs` 一支就夠,指邊條 URL 都得
+(`npm run check:index` / `check:case` 只係幫你填好 URL)。
 
 其他:
 - `curl -s localhost:3001/robots.txt` / `sitemap.xml` / `-I /en/opengraph-image`(要 `image/png`)

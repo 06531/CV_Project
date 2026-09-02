@@ -8,11 +8,19 @@ import WorldStage from '@/components/WorldStage';
 import { PROJECTS } from '@/data/cv';
 import { INTRO_WORLD } from '@/data/world';
 import { Link } from '@/i18n/navigation';
+import { pageMetadata } from '@/site';
 
 export async function generateMetadata({ params }: PageProps<'/[locale]/portfolio'>): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'meta' });
-  return { title: t('portfolioTitle') };
+  const portfolio = await getTranslations({ locale, namespace: 'portfolio' });
+
+  return pageMetadata({
+    locale,
+    path: '/portfolio',
+    title: t('portfolioTitle'),
+    description: portfolio('subheading'),
+  });
 }
 
 export default async function PortfolioPage({ params }: PageProps<'/[locale]/portfolio'>) {
@@ -30,7 +38,7 @@ export default async function PortfolioPage({ params }: PageProps<'/[locale]/por
         {t('world.skip')}
       </a>
 
-      <WorldStage scenes={INTRO_WORLD} seenKey="cv-world-intro" />
+      <WorldStage scenes={INTRO_WORLD} skipTo="#projects" />
 
       <div id="projects" className="mx-auto max-w-6xl scroll-mt-20 px-4 sm:px-6">
         <Link

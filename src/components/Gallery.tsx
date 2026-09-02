@@ -10,7 +10,21 @@ export interface Shot {
   caption?: string;
 }
 
-export default function Gallery({ desktop, mobile }: { desktop: Shot[]; mobile: Shot[] }) {
+export default function Gallery({
+  desktop,
+  mobile,
+  wide = false,
+}: {
+  desktop: Shot[];
+  mobile: Shot[];
+  /**
+   * The shots are explainer boards rather than screenshots. A board is about
+   * 2.5:1, so in the 16/10 tile the whole lower third is empty — `object-cover`
+   * cannot fix that, since anything wider than the tile is cropped at the sides
+   * instead. Give those a tile of their own shape.
+   */
+  wide?: boolean;
+}) {
   const t = useTranslations('portfolio');
   const hasToggle = mobile.length > 0 && desktop.length > 0;
   const [viewport, setViewport] = useState<'desktop' | 'mobile'>(
@@ -85,7 +99,7 @@ export default function Gallery({ desktop, mobile }: { desktop: Shot[]; mobile: 
             >
               <div
                 className={`relative overflow-hidden bg-surface-2 ${
-                  viewport === 'mobile' ? 'aspect-9/16' : 'aspect-16/10'
+                  viewport === 'mobile' ? 'aspect-9/16' : wide ? 'aspect-[2.56/1]' : 'aspect-16/10'
                 }`}
               >
                 <Image

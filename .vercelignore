@@ -12,5 +12,8 @@
 _material
 node_modules
 .claude
-CV.pdf
-Kevin_CV.pdf
+# Anchored to the root on purpose: these are the two CV masters that live
+# there, and an unanchored `Kevin_Wu_CV.pdf` would also match the copy under
+# public/cv/ — which is the file the download route serves.
+/CV.pdf
+/Kevin_Wu_CV.pdf

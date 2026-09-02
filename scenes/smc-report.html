@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>smc-report — scroll-world explainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="scene.css">
+<script src="shell.js"></script>
+<style>
+  /* Two people ask for the same report and get two different files. The middle
+     column is where the work happens — a stored procedure aggregating, then
+     batches written out — and the right column is the point: the download path
+     is built from who asked, so the rows they may not see never reach the disk.
+     The band underneath is the other half of the job: a Go service that skips
+     the application tier and talks to the core database directly.
+
+     Every role, queue, path and figure here is invented; the system is a
+     client's production contact centre and is not filmed.
+     Shared shell lives in scene.css. */
+  :root {
+    --p-deny: #b45309;    /* out of scope — withheld, not broken */
+  }
+
+  #board { max-width: 940px; }
+
+  @media (min-aspect-ratio: 3/4) {
+    .body { padding: clamp(16px, 2.3vmin, 24px); }
+  }
+
+  .report {
+    display: grid;
+    grid-template-columns: 0.82fr 1.06fr 1.12fr;
+    gap: clamp(8px, 1.4vmin, 16px);
+    align-items: start;
+    margin-top: clamp(9px, 1.4vmin, 15px);
+  }
+
+  .col {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface);
+    padding: clamp(7px, 1vmin, 11px) clamp(8px, 1.1vmin, 12px);
+    /* Shorter than the other two scenes: the Go band underneath needs the room,
+       and the board still has to finish above the scroll-world's scrim. */
+    min-height: clamp(128px, 20vmin, 178px);
+  }
+  .col.is-lead { border-color: var(--accent); box-shadow: 0 12px 34px -20px rgba(13, 116, 144, .5); }
+
+  .colHead {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    font-family: var(--mono);
+    font-size: clamp(9px, .98vmin, 11.5px);
+    text-transform: uppercase; letter-spacing: .07em;
+    color: var(--muted);
+    padding-bottom: clamp(5px, .7vmin, 8px);
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* ---- left · who is asking ---- */
+  .roleList { display: flex; flex-direction: column; gap: clamp(5px, .8vmin, 9px); margin-top: clamp(7px, 1vmin, 11px); }
+  .roleCard {
+    padding: clamp(5px, .75vmin, 9px) clamp(6px, .85vmin, 10px);
+    border: 1px solid var(--line); border-radius: 8px;
+    background: var(--surface-2);
+  }
+  .roleName {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    font-family: var(--mono); font-size: clamp(9px, 1vmin, 11.5px); font-weight: 700;
+  }
+  .roleScope { font-family: var(--mono); font-size: clamp(8px, .86vmin, 10px); color: var(--muted); font-weight: 400; }
+  .roleChips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: clamp(4px, .6vmin, 6px); }
+  .roleChips .chip { font-size: clamp(7.5px, .84vmin, 9.5px); padding: 3px 6px; }
+
+  /* ---- middle · the procedure, then the batches ---- */
+  .procBox {
+    margin-top: clamp(7px, 1vmin, 11px);
+    padding: clamp(6px, .85vmin, 10px) clamp(7px, .95vmin, 11px);
+    border: 1px solid var(--line); border-radius: 8px;
+    background: var(--surface-2);
+  }
+  .procBox.is-hot { border-color: var(--accent); background: var(--accent-soft); }
+  .procName { font-family: var(--mono); font-size: clamp(8.5px, .95vmin, 11px); font-weight: 700; color: var(--ink); }
+  .procBox.is-hot .procName { color: var(--accent); }
+  .procRows {
+    display: flex; align-items: baseline; gap: 5px;
+    margin-top: clamp(3px, .45vmin, 5px);
+    font-family: var(--mono); font-size: clamp(8px, .88vmin, 10px); color: var(--muted);
+  }
+  .procRows b { font-size: clamp(11px, 1.3vmin, 15px); color: var(--accent); font-weight: 700; }
+
+  .batchList { display: flex; flex-direction: column; gap: clamp(3px, .42vmin, 5px); margin-top: clamp(6px, .9vmin, 10px); }
+  .batchRow {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: clamp(8px, .88vmin, 10px); color: var(--muted);
+  }
+  .batchRow .bar { flex: 1; height: clamp(4px, .6vmin, 6px); border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+  .batchRow .fill { height: 100%; border-radius: 3px; background: var(--ok); }
+  .batchRow .n { flex: none; color: var(--ink); }
+
+  /* ---- right · two files, cut to fit the requester ---- */
+  .pathList { display: flex; flex-direction: column; gap: clamp(5px, .8vmin, 9px); margin-top: clamp(7px, 1vmin, 11px); }
+  .pathCard {
+    padding: clamp(5px, .75vmin, 9px) clamp(6px, .85vmin, 10px);
+    border: 1px solid var(--line); border-radius: 8px;
+    background: var(--surface);
+  }
+  .pathFor { font-family: var(--mono); font-size: clamp(7.5px, .84vmin, 9.5px); color: var(--muted); letter-spacing: .05em; }
+  .pathStr {
+    margin-top: 3px;
+    font-family: var(--mono); font-size: clamp(8px, .9vmin, 10.5px); font-weight: 700;
+    color: var(--accent);
+    word-break: break-all; line-height: 1.35;
+  }
+  .scopeRows { display: flex; flex-wrap: wrap; gap: 4px; margin-top: clamp(4px, .6vmin, 6px); }
+  .sc {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 6px; border-radius: 5px;
+    font-family: var(--mono); font-size: clamp(7.5px, .84vmin, 9.5px);
+    background: color-mix(in srgb, var(--ok) 12%, #fff); color: var(--ok); font-weight: 700;
+  }
+  /* Withheld rows stay on screen struck through rather than disappearing —
+     the file being shorter is the whole observation. */
+  .sc.deny {
+    background: color-mix(in srgb, var(--p-deny) 10%, #fff);
+    color: var(--p-deny);
+    text-decoration: line-through;
+  }
+
+  /* ---- the band underneath · the other project ---- */
+  .goBand {
+    display: flex; align-items: center; gap: clamp(8px, 1.3vmin, 16px);
+    margin-top: clamp(8px, 1.2vmin, 14px);
+    padding: clamp(6px, .9vmin, 10px) clamp(9px, 1.2vmin, 14px);
+    border: 1px solid var(--accent); border-radius: 9px;
+    background: var(--accent-soft);
+  }
+  .goName { font-family: var(--mono); font-size: clamp(8.5px, .95vmin, 11px); font-weight: 700; color: var(--accent); white-space: nowrap; }
+  .goDesc { font-family: var(--mono); font-size: clamp(8px, .88vmin, 10px); color: var(--muted); line-height: 1.35; }
+  .goLat { margin-left: auto; display: flex; align-items: baseline; gap: 4px; white-space: nowrap; }
+  .goLat b { font-family: var(--mono); font-size: clamp(12px, 1.5vmin, 17px); font-weight: 700; color: var(--accent); }
+  .goLat span { font-family: var(--mono); font-size: clamp(8px, .88vmin, 10px); color: var(--muted); }
+
+  .miniRail { display: none; }
+
+  /* Portrait keeps the two files and the band. The procedure and the batch bars
+     are the mechanism; the two paths are the result, and at 360px wide there is
+     only room to show one of those. The scene's copy carries the rest. */
+  @media (max-aspect-ratio: 3/4) {
+    .report { grid-template-columns: 1fr; gap: 0; margin-top: 6px; }
+    .col.req, .col.proc { display: none; }
+    .col { min-height: 0; padding: 9px 10px; }
+    .pathList { gap: 8px; }
+    .pathStr { font-size: 10px; }
+    .sc { font-size: 9.5px; padding: 3px 7px; }
+    .goBand { margin-top: 9px; padding: 8px 10px; gap: 9px; }
+    .goDesc { display: none; }
+    .goName { font-size: 10.5px; }
+    .miniRail {
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 4px;
+      margin-top: 9px;
+    }
+    .miniRail .chip { font-size: 10px; padding: 3px 7px; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="board">
+    <div class="window">
+      <div class="titlebar">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="name">reports · batch export</span>
+      </div>
+      <div class="body">
+        <div class="prompt"><span class="sigil">$</span> <span id="typed"></span><span class="caret" id="caret"></span></div>
+
+        <div class="report">
+
+          <div class="col req" id="colReq">
+            <div class="colHead"><span>request</span><span>2026-03</span></div>
+            <div class="roleList" id="roleList"></div>
+          </div>
+
+          <div class="col proc" id="colProc">
+            <div class="colHead"><span>aggregate</span><span id="procState">idle</span></div>
+            <div class="procBox" id="procBox">
+              <div class="procName">usp_InteractionSummary</div>
+              <div class="procRows"><b id="procN">0</b> <span>rows aggregated</span></div>
+            </div>
+            <div class="batchList" id="batchList"></div>
+          </div>
+
+          <div class="col out" id="colOut">
+            <div class="colHead"><span>download</span><span>by authorisation</span></div>
+            <div class="pathList" id="pathList"></div>
+          </div>
+
+        </div>
+
+        <div class="goBand" id="goBand">
+          <span class="goName">Go · server integration</span>
+          <span class="goDesc">a second path for the heavy reads — straight into the core database, no application tier in between</span>
+          <span class="goLat"><b id="goMs">240</b><span>ms p95</span></span>
+        </div>
+
+        <div class="miniRail" id="miniRail">
+          <span class="chip is-model">scoped by authorisation</span>
+          <span class="chip">batched CSV</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  // The site's progress pill and Skip button sit over the top-right of a phone
+  // frame, so the portrait caption has to stop short of them.
+  const command = () =>
+    matchMedia('(max-aspect-ratio: 3/4)').matches
+      ? 'export the month'
+      : 'export the month — same request, two files';
+
+  const board = $('board'), typed = $('typed'), caret = $('caret');
+
+  // Two invented roles asking for the same thing. The scope line is what makes
+  // their two files different.
+  const ROLES = [
+    ['Admin', 'all queues', ['interactions', 'chat history', '2026-03']],
+    ['Supervisor', 'Billing only', ['interactions', 'chat history', '2026-03']],
+  ];
+  $('roleList').innerHTML = ROLES.map(([name, scope, chips]) => `
+    <div class="roleCard">
+      <div class="roleName"><span>${name}</span><span class="roleScope">${scope}</span></div>
+      <div class="roleChips">${chips.map((c) => `<span class="chip">${c}</span>`).join('')}</div>
+    </div>`).join('');
+  const roleCards = Array.from($('roleList').children);
+
+  // Four batches, because the export is written in chunks rather than held
+  // whole in memory — the row counts are invented but the shape is the point.
+  const BATCHES = [['batch 1', '25k'], ['batch 2', '25k'], ['batch 3', '25k'], ['batch 4', '9k']];
+  $('batchList').innerHTML = BATCHES.map(([label, n]) => `
+    <div class="batchRow"><span>${label}</span><span class="bar"><span class="fill" style="width:0%"></span></span><span class="n">${n}</span></div>`).join('');
+  const batchRows = Array.from($('batchList').children);
+
+  // Same month, same report, two paths — and the second one is shorter.
+  const PATHS = [
+    ['Admin', '/exports/all/interactions-2026-03.csv',
+      [['Billing', 0], ['Support', 0], ['Overflow', 0]]],
+    ['Supervisor', '/exports/billing/interactions-2026-03.csv',
+      [['Billing', 0], ['Support', 1], ['Overflow', 1]]],
+  ];
+  $('pathList').innerHTML = PATHS.map(([who, path, scopes]) => `
+    <div class="pathCard">
+      <div class="pathFor">for ${who}</div>
+      <div class="pathStr">${path}</div>
+      <div class="scopeRows">${scopes.map(([q, deny]) =>
+        `<span class="sc${deny ? ' deny' : ''}">${q}</span>`).join('')}</div>
+    </div>`).join('');
+  const pathCards = Array.from($('pathList').children);
+  const denyChips = Array.from($('pathList').querySelectorAll('.sc.deny'));
+
+  const colReq = $('colReq'), colProc = $('colProc'), colOut = $('colOut');
+  const procBox = $('procBox'), procN = $('procN'), procState = $('procState');
+  const goBand = $('goBand'), goMs = $('goMs');
+
+  function reveal(el, t, lift) {
+    el.style.opacity = t;
+    el.style.transform = `translateY(${(1 - t) * (lift == null ? 14 : lift)}px)`;
+  }
+
+  defineScene(function (p) {
+
+    // 0.01–0.09 — the caption types itself out.
+    const text = command();
+    typed.textContent = text.slice(0, Math.round(seg(p, 0.01, 0.09) * text.length));
+    caret.style.opacity = p > 0.13 ? 0 : (Math.floor(p * 44) % 2 ? 0.25 : 1);
+
+    // The three columns arrive in the order the work happens in.
+    reveal(colReq, seg(p, 0.03, 0.13), 16);
+    reveal(colProc, seg(p, 0.24, 0.34), 16);
+    reveal(colOut, seg(p, 0.58, 0.68), 16);
+    colReq.classList.toggle('is-lead', p < 0.28);
+    colProc.classList.toggle('is-lead', p >= 0.28 && p < 0.62);
+    colOut.classList.toggle('is-lead', p >= 0.62 && p < 0.86);
+
+    // 0.06–0.24 — both requesters, and what each is allowed to see.
+    roleCards.forEach((el, k) => reveal(el, seg(p, 0.07 + k * 0.07, 0.18 + k * 0.07), 8));
+
+    // 0.30–0.56 — the procedure runs. The counter is derived from p, so the
+    // same frame always shows the same number.
+    const hot = p > 0.32 && p < 0.60;
+    procBox.classList.toggle('is-hot', hot);
+    procState.textContent = p < 0.32 ? 'idle' : p < 0.62 ? 'running' : 'done';
+    // 84k is the four batches below added up; `toLocaleString` is deliberately
+    // not used — it would render differently depending on the capture locale.
+    procN.textContent = `${Math.round(seg(p, 0.32, 0.58) * 84)}k`;
+
+    // 0.44–0.70 — written out in chunks rather than one file held in memory.
+    batchRows.forEach((row, k) => {
+      reveal(row, seg(p, 0.44 + k * 0.035, 0.52 + k * 0.035), 6);
+      row.querySelector('.fill').style.width = `${seg(p, 0.47 + k * 0.045, 0.60 + k * 0.045) * 100}%`;
+    });
+
+    // 0.62–0.86 — two paths, then the rows the second requester never gets.
+    pathCards.forEach((el, k) => reveal(el, seg(p, 0.62 + k * 0.06, 0.72 + k * 0.06), 8));
+    denyChips.forEach((el, k) => {
+      const t = seg(p, 0.80 + k * 0.03, 0.87 + k * 0.03);
+      el.style.opacity = 0.35 + t * 0.65;
+      el.style.textDecorationColor = `color-mix(in srgb, var(--p-deny) ${Math.round(t * 100)}%, transparent)`;
+    });
+
+    // 0.86–1.00 — the Go service surfaces, and the latency it was built for.
+    reveal(goBand, seg(p, 0.86, 0.94), 10);
+    goMs.textContent = Math.round(240 - seg(p, 0.88, 1) * 202);
+
+    // Continuous slow push-in so no stretch of the clip is a frozen frame.
+    const settle = seg(p, 0.90, 1);
+    const scale = 1 + p * 0.04 - settle * 0.012;
+    board.style.transform = `translateY(${(0.5 - p) * 20}px) scale(${scale.toFixed(4)})`;
+
+  });
+})();
+</script>
+</body>
+</html>

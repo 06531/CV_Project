@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="scene.css">
+<script src="shell.js"></script>
 <style>
   /* One deployment, one database — and every school gets its own address,
      its own brand and its own QR code. Shared shell lives in scene.css. */
@@ -119,9 +120,6 @@
 (function () {
   const HOST = 'schedule.app/c/';
   const SLUG = 'abc-music';
-  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
-  const seg = (p, from, to) => { const x = clamp((p - from) / (to - from), 0, 1); return x * x * (3 - 2 * x); };
-  const $ = (id) => document.getElementById(id);
 
   const board = $('board'), hostEl = $('host'), slugEl = $('slug'), caret = $('caret');
   const logItems = Array.from($('log').children);
@@ -205,11 +203,7 @@
     el.style.transform = `translateY(${(1 - t) * (lift == null ? 14 : lift)}px)`;
   }
 
-  let last = { i: 0, total: 2 };
-
-  window.__setFrame = function (i, total) {
-    last = { i, total };
-    const p = total > 1 ? clamp(i / (total - 1), 0, 1) : 0;
+  defineScene(function (p) {
     wirePaths();
 
     // 0.00–0.22 — the address types itself out, host first then the tenant slug.
@@ -250,11 +244,7 @@
     const scale = 1 + p * 0.045 - settle * 0.012;
     board.style.transform = `translateY(${(0.5 - p) * 24}px) scale(${scale.toFixed(4)})`;
 
-    document.documentElement.dataset.frame = String(i);
-  };
-
-  window.__setFrame(0, 2);
-  window.addEventListener('resize', () => window.__setFrame(last.i, last.total));
+  });
 })();
 </script>
 </body>

@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>otto-desk — scroll-world explainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="scene.css">
+<script src="shell.js"></script>
+<style>
+  /* The desk itself: a folder that holds one shipment's whole paper trail, a
+     grid that filters down any column, and the palette of document types the
+     next one is opened from.
+
+     This scene used to be a film of the running product. It is drawn now —
+     the system belongs to a former employer, and its UAT data is a real
+     customer's however synthetic the environment is. Every folder id, party,
+     document number and count below is invented.
+
+     Shared shell lives in scene.css; only this scene's own layout is here. */
+
+  #board { max-width: 960px; }
+
+  /* The scene is seven rows plus two bands, and at the shell's default padding
+     that is taller than the strip between the site's header and the
+     scroll-world's scrim. Everything below is trimmed to fit inside it. */
+  @media (min-aspect-ratio: 3/4) {
+    .body { padding: clamp(14px, 2vmin, 22px); }
+  }
+
+  /* ---- the folder the documents hang off ---- */
+  .folder {
+    margin-top: clamp(9px, 1.3vmin, 15px);
+    display: flex; align-items: center; gap: clamp(7px, 1.1vmin, 12px);
+    padding: clamp(5px, .72vmin, 8px) clamp(9px, 1.3vmin, 14px);
+    border: 1px solid var(--line); border-radius: 10px;
+    background: var(--surface-2);
+  }
+  .folder svg { width: 17px; height: 17px; flex: none; stroke: var(--accent); fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .folder .id { font-family: var(--mono); font-size: clamp(11px, 1.2vmin, 14px); font-weight: 700; white-space: nowrap; }
+  .folder .card__meta { margin-top: 0; margin-left: auto; justify-content: flex-end; }
+
+  /* ---- the grid ---- */
+  .grid {
+    width: 100%;
+    margin-top: clamp(8px, 1.15vmin, 13px);
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: clamp(9px, 1vmin, 12px);
+    table-layout: fixed;
+  }
+  .grid th {
+    font-weight: 500; color: var(--muted); text-align: left;
+    padding: 0 clamp(5px, .8vmin, 10px) clamp(4px, .55vmin, 6px) 0;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  /* The caret is what says "this column filters" — every one of them does. */
+  .grid th .caret-mark { color: var(--line); margin-left: 4px; }
+  .grid th.is-filtered { color: var(--accent); }
+  .grid th.is-filtered .caret-mark { color: var(--accent); }
+  .grid td {
+    padding: clamp(3px, .42vmin, 5px) clamp(5px, .8vmin, 10px) clamp(3px, .42vmin, 5px) 0;
+    border-bottom: 1px solid var(--surface-2);
+    color: var(--muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .grid td.doc { color: var(--ink); font-weight: 700; }
+
+  /* Column widths live here rather than on the `col` elements, so the portrait
+     block below can redistribute them once two of the five are gone. */
+  .grid .c-no { width: 26%; }
+  .grid .c-type { width: 27%; }
+  .grid .c-mode { width: 13%; }
+  .grid .c-party { width: 20%; }
+  .grid .c-status { width: 18%; }
+  .grid tr.is-out td { opacity: .28; }
+
+  /* Draft / Validated / Sent / Received, as a dot and a word. */
+  .st { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+  .st i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); flex: none; }
+  .st.s-validated i, .st.s-sent i { background: var(--accent); }
+  .st.s-received i { background: var(--ok); }
+  .st.s-received { color: var(--ok); }
+
+  /* The filter as it lands on the Mode column. */
+  .filterChip {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 2px 7px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--accent);
+    font-weight: 700; font-size: .92em;
+  }
+
+  /* ---- the palette the next document is opened from ---- */
+  .types {
+    margin-top: clamp(9px, 1.3vmin, 16px);
+    display: flex; align-items: stretch; gap: clamp(6px, 1vmin, 12px);
+  }
+  .mode {
+    flex: 1;
+    padding: clamp(5px, .72vmin, 8px) clamp(7px, 1.05vmin, 12px);
+    border: 1px solid var(--line); border-radius: 9px;
+    background: var(--surface);
+  }
+  .mode.is-lead { border-color: var(--accent); background: var(--accent-soft); }
+  .mode .name {
+    font-family: var(--mono); font-size: clamp(8.5px, .92vmin, 11px);
+    letter-spacing: .07em; text-transform: uppercase; color: var(--muted);
+  }
+  .mode.is-lead .name { color: var(--accent); }
+  .mode .n {
+    display: flex; align-items: baseline; gap: 5px;
+    margin-top: clamp(2px, .35vmin, 4px);
+    font-family: var(--mono); font-size: clamp(8px, .86vmin, 10px); color: var(--muted);
+  }
+  .mode .n b { font-size: clamp(14px, 1.55vmin, 19px); color: var(--ink); font-weight: 700; }
+  .mode.is-lead .n b { color: var(--accent); }
+
+  /* Portrait keeps the grid — it is the scene — and pays for it everywhere
+     else: no folder chips, no Party column, four rows fewer, and the four
+     modes wrap two-up instead of standing in a row. */
+  @media (max-aspect-ratio: 3/4) {
+    .folder { margin-top: 7px; padding: 6px 9px; gap: 7px; }
+    .folder .id { font-size: 11px; }
+    .folder .card__meta { display: none; }
+
+    .grid { margin-top: 6px; font-size: 10px; }
+    .grid th { padding-right: 6px; padding-bottom: 4px; }
+    .grid td { padding: 3px 6px 3px 0; }
+    /* Two columns go. The document number is the one a phone can afford to
+       lose: the type is what says what the row is, and the mode is the column
+       the filter lands on. */
+    .grid .col-party, .grid .col-no { display: none; }
+    .grid .c-type { width: 40%; }
+    /* Wide enough that the filter chip has somewhere to land — a `th` does not
+       clip, so a narrow column here puts `= SEA` on top of the next header. */
+    .grid .c-mode { width: 32%; }
+    .grid .c-status { width: 28%; }
+    .grid th .caret-mark { display: none; }
+    /* Five rows is what a phone frame holds above the scrim. The three that go
+       are all `is-out` after the filter anyway. */
+    .grid tbody tr:nth-child(n+6) { display: none; }
+    .filterChip { margin-left: 4px; padding: 2px 5px; }
+
+    .types { margin-top: 8px; flex-wrap: wrap; gap: 5px; }
+    .mode { flex: 1 1 calc(50% - 3px); padding: 5px 8px; }
+    .mode .name { font-size: 9.5px; }
+    .mode .n { font-size: 9px; }
+    .mode .n b { font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="board">
+    <div class="window">
+      <div class="titlebar">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="name">TDS eDOC — Shipment Management</span>
+      </div>
+      <div class="body">
+        <div class="prompt"><span class="sigil">$</span> <span id="typed"></span><span class="caret" id="caret"></span></div>
+
+        <div class="folder" id="folder">
+          <!-- lucide: folder-open -->
+          <svg viewBox="0 0 24 24"><path d="M6 14l1.9-3.8A2 2 0 0 1 9.7 9H21a1 1 0 0 1 .9 1.4L20 15.6a2 2 0 0 1-1.8 1.4H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.7.9l.8 1.2a2 2 0 0 0 1.7.9H18a2 2 0 0 1 2 2v2"/></svg>
+          <span class="id">SHP-900412-0001</span>
+          <div class="card__meta">
+            <span class="chip" id="chipDocs">7 documents</span>
+            <span class="chip">4 parties</span>
+            <span class="chip is-model">1 shipment</span>
+          </div>
+        </div>
+
+        <table class="grid" id="grid">
+          <colgroup>
+            <col class="c-no col-no"><col class="c-type"><col class="c-mode">
+            <col class="c-party col-party"><col class="c-status">
+          </colgroup>
+          <thead>
+            <tr id="head">
+              <th class="col-no">Document No<span class="caret-mark">▾</span></th>
+              <th>Type<span class="caret-mark">▾</span></th>
+              <th id="thMode">Mode<span class="caret-mark">▾</span><span class="filterChip" id="filterChip">= SEA</span></th>
+              <th class="col-party">Party<span class="caret-mark">▾</span></th>
+              <th>Status<span class="caret-mark">▾</span></th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+
+        <div class="types" id="types"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const COMMAND = 'open folder SHP-900412-0001';
+
+  // Invented, all of it — see the note at the top of the stylesheet.
+  const ROWS = [
+    ['PO-900412-0001',  'Purchase Order',        'SEA',     'Demo Trader',     'received'],
+    ['PL-900412-0004',  'Packing List',          'SEA',     'Demo Sourcing',   'sent'],
+    ['CI-900412-0004',  'Commercial Invoice',    'SEA',     'Demo Sourcing',   'sent'],
+    ['HBL-900412-0002', 'House Bill of Lading',  'SEA',     'Demo Forwarding', 'validated'],
+    ['SO-900412-0003',  'Shipping Order',        'AIR',     'Demo Forwarding', 'validated'],
+    ['AWB-900412-0006', 'Air Waybill',           'AIR',     'Demo Forwarding', 'draft'],
+    ['CBK-900412-0007', 'Courier Booking',       'COURIER', 'Demo Logistics',  'draft'],
+  ];
+
+  /** Twenty-five types, and which transport mode each belongs to. */
+  const MODES = [
+    ['sea', 11], ['air', 6], ['rail', 3], ['courier', 5],
+  ];
+
+  const board = $('board'), typed = $('typed'), caret = $('caret');
+  const folder = $('folder'), chipDocs = $('chipDocs');
+  const head = $('head'), thMode = $('thMode'), filterChip = $('filterChip');
+
+  $('rows').innerHTML = ROWS.map(([no, type, mode, party, status]) => `
+    <tr>
+      <td class="doc col-no">${no}</td>
+      <td>${type}</td>
+      <td>${mode}</td>
+      <td class="col-party">${party}</td>
+      <td><span class="st s-${status}"><i></i>${status[0].toUpperCase() + status.slice(1)}</span></td>
+    </tr>`).join('');
+  const rowEls = Array.from($('rows').children);
+
+  $('types').innerHTML = MODES.map(([name]) => `
+    <div class="mode">
+      <div class="name">${name}</div>
+      <div class="n"><b>0</b><span>doc types</span></div>
+    </div>`).join('');
+  const modeEls = Array.from($('types').children);
+
+  function reveal(el, t, lift) {
+    el.style.opacity = t;
+    el.style.transform = `translateY(${(1 - t) * (lift == null ? 14 : lift)}px)`;
+  }
+
+  /** Table rows fade only. `transform` on a `<tr>` is not something to rely on
+      across engines, and a row that slides is a row that misaligns its cells. */
+  const fade = (el, t) => { el.style.opacity = t; };
+
+  defineScene(function (p) {
+    // 0.00–0.12 — the request types itself out.
+    const chars = Math.round(seg(p, 0.01, 0.12) * COMMAND.length);
+    typed.textContent = COMMAND.slice(0, chars);
+    caret.style.opacity = p > 0.16 ? 0 : (Math.floor(p * 44) % 2 ? 0.25 : 1);
+
+    // 0.08–0.24 — the folder opens, then the column headers.
+    reveal(folder, seg(p, 0.08, 0.22));
+    fade(head, seg(p, 0.18, 0.30));
+
+    // 0.24–0.56 — its documents arrive, one row at a time.
+    rowEls.forEach((el, k) => fade(el, seg(p, 0.24 + k * 0.026, 0.36 + k * 0.026)));
+
+    // 0.60–0.72 — a filter lands on one column and the rows that do not match
+    // go with it. Four of seven left, and the folder's own count follows.
+    const filtered = seg(p, 0.60, 0.72);
+    filterChip.style.opacity = filtered;
+    filterChip.style.transform = `scale(${0.86 + filtered * 0.14})`;
+    thMode.classList.toggle('is-filtered', filtered > 0.5);
+    rowEls.forEach((el, k) => el.classList.toggle('is-out', filtered > 0.5 && ROWS[k][2] !== 'SEA'));
+    chipDocs.textContent = filtered > 0.5 ? '4 of 7 shown' : '7 documents';
+    chipDocs.className = filtered > 0.5 ? 'chip is-model' : 'chip';
+
+    // 0.72–0.98 — and behind one folder, the whole catalogue: twenty-five
+    // document types, counted up per transport mode.
+    modeEls.forEach((el, k) => {
+      const t = seg(p, 0.72 + k * 0.04, 0.86 + k * 0.04);
+      reveal(el, t, 10);
+      el.querySelector('b').textContent = String(Math.round(MODES[k][1] * t));
+      el.classList.toggle('is-lead', t > 0.98);
+    });
+
+    // Continuous slow push-in so no stretch of the clip is a frozen frame.
+    const settle = seg(p, 0.90, 1);
+    const scale = 1 + p * 0.04 - settle * 0.011;
+    board.style.transform = `translateY(${(0.5 - p) * 22}px) scale(${scale.toFixed(4)})`;
+  });
+})();
+</script>
+</body>
+</html>

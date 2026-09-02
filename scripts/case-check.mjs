@@ -1,6 +1,5 @@
-// Drives a case study's film — the 'auto' half of the scroll-world, which
-// plays itself rather than being scrubbed, and so has none of the sticky
-// geometry world-check.mjs measures.
+// Drives a scroll-world deck — the portfolio index's opener or a case study's,
+// both of which play themselves on arrival.
 //
 // Three phases, each guarding a bug this page has actually shipped:
 //
@@ -16,24 +15,15 @@
 //
 // Usage: node scripts/case-check.mjs [url] [desktop|mobile]
 
-import { chromium, devices } from 'playwright';
+import { CHECK_ORIGIN, gotoOrExit, launchCheck } from './lib/browser.mjs';
 
-const URL = process.argv[2] ?? 'http://localhost:3001/en/portfolio/schedule';
+const URL = process.argv[2] ?? `${CHECK_ORIGIN}/en/portfolio/schedule`;
 const MODE = process.argv[3] ?? 'desktop';
 
 const failures = [];
 const fail = (phase, msg) => failures.push(`[${phase}] ${msg}`);
 
-const browser = await chromium.launch();
-const context = await browser.newContext({
-  ...(MODE === 'mobile' ? devices['iPhone 13'] : { viewport: { width: 1440, height: 900 } }),
-  // Headless Chromium reports `prefers-reduced-motion: reduce`, under which
-  // AutoWorld builds no <video> at all and every assertion below is vacuous.
-  reducedMotion: 'no-preference',
-});
-const page = await context.newPage();
-const errors = [];
-page.on('pageerror', (e) => errors.push(String(e)));
+const { browser, page, errors } = await launchCheck({ mode: MODE });
 
 /** Everything the assertions need, read straight off the live page. */
 const state = () =>
@@ -43,8 +33,6 @@ const state = () =>
     const videos = [...document.querySelectorAll('video')];
     return {
       film: !!film,
-      // A scrub deck renders the same landmark but hangs a sticky stage off it.
-      scrub: !!document.querySelector('[data-stage]'),
       buttons: [...(film?.querySelectorAll('button') ?? [])].map((b) =>
         b.innerText.trim().replace(/\s+/g, ' '),
       ),
@@ -68,32 +56,15 @@ const isReplay = (s) => s.buttons.some((b) => /replay|重播/i.test(b));
 const isSkip = (s) => s.buttons.some((b) => /skip|跳過/i.test(b));
 const isPlay = (s) => s.buttons.some((b) => /^(play|播放)$/i.test(b));
 
-async function load(waitUntil = 'networkidle') {
-  try {
-    await page.goto(URL, { waitUntil });
-  } catch (err) {
-    console.error(
-      `cannot reach ${URL}\n  ${err.message.split('\n')[0]}\n` +
-        '  start the server first: npx next start -p 3001',
-    );
-    await browser.close();
-    process.exit(1);
-  }
-}
+const load = (waitUntil = 'networkidle') => gotoOrExit(page, URL, { browser, waitUntil });
 
 // --------------------------------------------------------------- arrival
 
 await load();
 await page.waitForTimeout(2500);
 let s = await state();
-if (!s.film || s.scrub) {
-  console.error(
-    s.scrub
-      ? `${URL} is a scrub deck, not a case study — it is dragged by the scroll\n` +
-        '  rather than played, so none of the assertions below mean anything here.\n' +
-        '    npm run check:world -- .shots <url> [desktop|mobile]'
-      : `no film at ${URL} — is this a case study?`,
-  );
+if (!s.film) {
+  console.error(`no film at ${URL} — is this a page with a deck on it?`);
   await browser.close();
   process.exit(1);
 }

@@ -63,14 +63,25 @@
 - Scroll-world 加一幕:`scenes/<id>.html` + `scenes/manifest.mjs` + `src/data/world.ts` +
   **兩個** `messages/*.json` 嘅 `portfolio.world.scenes.<id>`,之後
   `node scripts/capture-world-frames.mjs --only=<id>` 再 `node scripts/encode-world-clips.mjs --only=<id>`
+- **冇 scrub 模式喇** —— 兩個 deck(`INTRO_WORLD` / `PROJECT_WORLDS`)一律自動播
+  (`AutoWorld`:一個螢幕高、入到就播、右上角 Skip / 播完 Replay)。encode 嘅 GOP 統一 30,
+  唔再分模式。`scenes/manifest.mjs` 同 `src/data/world.ts` 兩邊 scene id 對唔上,
+  import manifest 嗰刻就會 throw
 - 場景 HTML 一定要係 `window.__setFrame(i, total)` 嘅純函數 —— 唔准用 CSS animation /
   timer / `Math.random()`,否則逐幀截圖唔可重現
 - `kind: 'app'` 嘅一幕係由 `shots[]` 剪出嚟:每段 `at` 指向 `capture-world-frames.mjs`
   入面一個畫面食譜(登入步驟喺 `scripts/lib/schedule-app.mjs`),`from` / `to` 係取景窗。
-  每段 `frames` 要係 **8 嘅倍數**,咁每個切口先啱啱落喺 keyframe
+  每段 `frames` 慣例係 8 嘅倍數(舊時 scrub GOP 嘅遺留,而家冇實際影響)
 - 影 schedule 用 e2e DB `schedule_app_e2e`(會 dropdb 重建),UI 同示範資料一律英文;
   新 demo 字串要加落 `scripts/lib/demo-en.mjs`,否則兩道 CJK 守尾門會拒絕拍
-- 改完 scroll-world 一定要跑 `npm run check:world`(桌面 + `mobile` 各一次)
+- 改完 scroll-world 一定要跑 **`npm run check`** —— 佢會自己開 `next start -p 3001`、
+  跑晒 index / case 兩個 deck 各桌面手機、加埋 assets,收工自己熄。
+  (3001 已經有 server 就直接借用,唔會殺你嗰個。)
+  單獨 debug 一項先用 `npm run check:index` / `check:case` 嗰批,嗰啲要你自己開住 server
+- **冇真畫面嘅 project**(`BOARD_SHOT_WORLDS`,`src/data/world.ts`:`smc` / `otto`)
+  gallery 用 scroll-world 嘅 board —— `encode-world-clips.mjs` 由每幕最後一格裁去
+  `public/portfolio/<slug>-N.jpg`,`cv.ts` 嘅 `boardGallery()` 由同一個 deck 砌 images。
+  加減一幕即係加減一格,改完記得跑 `node scripts/version-assets.mjs`
 - 未入版本控制嘅專案素材放 `_material/<slug>/`(已 gitignore);
   **真實客戶 / 公司資料唔可以影上網**,只用假 data 或測試環境
 - `AGENTS.md` 由 `next dev` 自動重寫,唔好手改

@@ -9,7 +9,7 @@ import SiteHeader from '@/components/SiteHeader';
 import ThemeProvider from '@/components/ThemeProvider';
 import { PROFILE } from '@/data/cv';
 import { routing } from '@/i18n/routing';
-import { SITE_URL } from '@/site';
+import { pageMetadata, SITE_URL } from '@/site';
 import '../globals.css';
 
 const inter = Inter({ variable: '--font-inter', subsets: ['latin'] });
@@ -25,24 +25,11 @@ export async function generateMetadata({ params }: LayoutProps<'/[locale]'>): Pr
 
   return {
     // Without a base, `openGraph` and the generated OG image resolve to
-    // relative URLs, which no scraper follows.
+    // relative URLs, which no scraper follows. This one *is* meant to be
+    // inherited — it is the same origin for every page.
     metadataBase: new URL(SITE_URL),
-    title: t('title'),
-    description: t('description'),
     applicationName: PROFILE.name,
-    alternates: {
-      canonical: `/${locale}`,
-      languages: Object.fromEntries(routing.locales.map((l) => [l, `/${l}`])),
-    },
-    openGraph: {
-      type: 'profile',
-      siteName: PROFILE.name,
-      locale: locale.replace('-', '_'),
-      title: t('title'),
-      description: t('description'),
-      url: `/${locale}`,
-    },
-    twitter: { card: 'summary_large_image', title: t('title'), description: t('description') },
+    ...pageMetadata({ locale, title: t('title'), description: t('description') }),
   };
 }
 

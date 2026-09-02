@@ -15,13 +15,14 @@
 // database (see scripts/lib/schedule-app.mjs), so it neither needs your dev
 // server running nor touches your dev data.
 //
-// Usage: node scripts/capture-world-frames.mjs [--force] [--only=id,id]
+// Usage: node scripts/capture-world-frames.mjs [--force] [--only=id,id] [--jobs=N]
 
 import { existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
+import { cpus } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
-import { DEFAULT_FRAMES, REMOTES, SCENES, VIEWPORTS } from '../scenes/manifest.mjs';
+import { DEFAULT_FRAMES, SCENES, VIEWPORTS } from '../scenes/manifest.mjs';
 import * as schedule from './lib/schedule-app.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -30,6 +31,40 @@ const FRAMES = path.join(root, '.frames');
 const force = process.argv.includes('--force');
 const onlyArg = process.argv.find((a) => a.startsWith('--only='))?.split('=')[1];
 const only = onlyArg ? new Set(onlyArg.split(',')) : null;
+
+/**
+ * How many explainer sequences to film at once.
+ *
+ * A full shoot is 12 scenes x 2 viewports x ~150 frames — around 3600 discrete
+ * screenshots — and one at a time it is the slowest thing in this repo. Each
+ * (scene, viewport) is completely independent: its own browser context, its own
+ * `file://` page, its own output directory, and `__setFrame` is a pure function
+ * of the frame index, so nothing one worker does can reach another.
+ *
+ * Measured on two scenes (4 sequences, 160 frames each): 37.6s at --jobs=1
+ * against 20.7s at --jobs=4, CPU 128% -> 280%. Capped at four rather than
+ * cpus-wide because at deviceScaleFactor 1.5-2 each context is a full renderer.
+ *
+ * TWO THINGS TO KNOW BEFORE TRUSTING A TIMING HERE:
+ *
+ * 1. The scenes fetch their webfonts from Google at capture time, and
+ *    `waitUntil: 'networkidle'` waits for that. Four contexts asking at once
+ *    takes `goto` from ~1.3s to ~5s, and one run that hit throttling stalled
+ *    for 15 minutes on work that takes 20 seconds. Self-hosting the two fonts
+ *    under scenes/ would remove the only external dependency in the shoot and
+ *    make its wall-clock predictable. Until then, a slow shoot is usually the
+ *    network, not the machine.
+ *
+ * 2. Desktop frames are not byte-reproducible and never were — about 16 of 160
+ *    differ between any two runs, at 88-96 dB PSNR, from sub-pixel AA in the
+ *    renderer. That is invisible, and these are re-encoded lossily at CRF 26
+ *    afterwards. It is not caused by --jobs: serial runs differ from each other
+ *    the same way. Do not treat a hash mismatch here as a regression.
+ */
+const jobsArg = Number(process.argv.find((a) => a.startsWith('--jobs='))?.split('=')[1]);
+const JOBS = Number.isFinite(jobsArg) && jobsArg > 0
+  ? Math.floor(jobsArg)
+  : Math.max(1, Math.min(4, Math.floor(cpus().length / 2)));
 
 const outDir = (id, vp) => path.join(FRAMES, `${id}-${vp.key}`);
 const frameName = (i) => `${String(i + 1).padStart(4, '0')}.png`;
@@ -55,19 +90,17 @@ function pending(scene) {
 
 // ------------------------------------------------------------- explainers
 
-async function captureExplainer(browser, scene) {
+/** One scene at one viewport — the unit the pool below hands out. */
+async function captureExplainerViewport(browser, scene, vp) {
   const file = 'file://' + path.join(root, 'scenes', `${scene.id}.html`);
-  if (!existsSync(path.join(root, 'scenes', `${scene.id}.html`))) {
-    throw new Error(`scenes/${scene.id}.html not found`);
-  }
   const frames = scene.frames ?? DEFAULT_FRAMES;
 
-  for (const vp of pending(scene)) {
-    const dir = prepare(scene.id, vp);
-    const context = await browser.newContext({
-      viewport: { width: vp.width, height: vp.height },
-      deviceScaleFactor: vp.dsf,
-    });
+  const dir = prepare(scene.id, vp);
+  const context = await browser.newContext({
+    viewport: { width: vp.width, height: vp.height },
+    deviceScaleFactor: vp.dsf,
+  });
+  try {
     const page = await context.newPage();
     await page.goto(file, { waitUntil: 'networkidle' });
     // Web fonts must be in before the first frame or the type reflows mid-clip.
@@ -78,10 +111,43 @@ async function captureExplainer(browser, scene) {
       await page.evaluate(([i, total]) => window.__setFrame(i, total), [i, frames]);
       await page.screenshot({ path: path.join(dir, frameName(i)) });
     }
-
+  } finally {
     await context.close();
-    console.log(`  capture ${scene.id}-${vp.key} (${frames} frames)`);
   }
+  console.log(`  capture ${scene.id}-${vp.key} (${frames} frames)`);
+}
+
+/**
+ * Every outstanding explainer sequence, filmed `JOBS` at a time.
+ *
+ * The pool is a shared iterator rather than a chunked split: the scenes differ
+ * in frame count by 20%, and handing each worker a fixed slice leaves one of
+ * them still filming while the rest have finished.
+ */
+async function captureExplainers(browser, scenes) {
+  const jobs = [];
+  for (const scene of scenes) {
+    if (!existsSync(path.join(root, 'scenes', `${scene.id}.html`))) {
+      throw new Error(`scenes/${scene.id}.html not found`);
+    }
+    for (const vp of pending(scene)) jobs.push({ scene, vp });
+  }
+  if (jobs.length === 0) return;
+
+  const width = Math.min(JOBS, jobs.length);
+  console.log(`  explainers: ${jobs.length} sequence(s), ${width} at a time`);
+
+  let next = 0;
+  const workers = Array.from({ length: width }, async () => {
+    while (true) {
+      const job = jobs[next++];
+      if (!job) return;
+      await captureExplainerViewport(browser, job.scene, job.vp);
+    }
+  });
+  // `all`, not `allSettled`: a scene that fails to film is a broken shoot, and
+  // finding out after the other eleven have run is the wrong time to hear it.
+  await Promise.all(workers);
 }
 
 // -------------------------------------------------------------- app scenes
@@ -230,253 +296,6 @@ async function captureApp(browser, scene) {
   }
 }
 
-// ----------------------------------------------------------- remote scenes
-
-/** Every frame of the page, since these apps are framesets. */
-const everyFrame = (page) => page.frames();
-
-const allFrameText = async (page) => {
-  const parts = await Promise.all(
-    everyFrame(page).map((f) => f.evaluate(() => document.body?.innerText ?? '').catch(() => '')),
-  );
-  return parts.join('\n');
-};
-
-/**
- * Rewrites the identifying names in place, in every frame. Done in the page
- * before the shutter rather than blurring the PNG afterwards, so the originals
- * never reach a file at all.
- */
-async function anonymise(page, remote) {
-  const rules = (remote.anonymise ?? []).map(([f, t]) => [
-    f instanceof RegExp ? { source: f.source, flags: f.flags } : f,
-    t,
-  ]);
-  for (const frame of everyFrame(page)) {
-    await frame
-      .evaluate(
-        ([rs, minDigits]) => {
-          if (!document.body) return;
-
-          /** Same length, different value, and the same answer every time. */
-          const maskRun = (run) => {
-            let h = 2166136261;
-            for (let i = 0; i < run.length; i++) h = ((h ^ run.charCodeAt(i)) * 16777619) >>> 0;
-            let out = '';
-            while (out.length < run.length) {
-              out += String(h % 10);
-              h = (h * 31 + 7) >>> 0;
-            }
-            return out;
-          };
-
-          const digits = minDigits ? new RegExp(`\\d{${minDigits},}`, 'g') : null;
-          const swap = (s) => {
-            let out = rs.reduce(
-              (acc, [find, to]) =>
-                find.source
-                  ? acc.replace(new RegExp(find.source, find.flags), to)
-                  : acc.split(find).join(to),
-              s,
-            );
-            if (digits) out = out.replace(digits, maskRun);
-            return out;
-          };
-
-          const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
-            // Rewriting script and style bodies achieves nothing and risks a lot.
-            acceptNode: (n) =>
-              /^(SCRIPT|STYLE)$/.test(n.parentElement?.tagName ?? '')
-                ? NodeFilter.FILTER_REJECT
-                : NodeFilter.FILTER_ACCEPT,
-          });
-          for (let n = walker.nextNode(); n; n = walker.nextNode()) {
-            const next = swap(n.nodeValue);
-            if (next !== n.nodeValue) n.nodeValue = next;
-          }
-          for (const el of document.querySelectorAll('input, [title], img[alt]')) {
-            if (el.value) el.value = swap(el.value);
-            if (el.title) el.title = swap(el.title);
-            if (el.alt) el.alt = swap(el.alt);
-          }
-        },
-        [rules, remote.maskDigits ?? 0],
-      )
-      .catch(() => {});
-  }
-
-  if (!remote.maskColumns) return;
-  for (const frame of everyFrame(page)) {
-    await frame
-      .evaluate((cols) => {
-        const wanted = new Map(Object.entries(cols));
-        for (const table of document.querySelectorAll('table')) {
-          const heads = table.tHead?.rows?.[0]?.cells;
-          if (!heads) continue;
-          const targets = [];
-          for (let i = 0; i < heads.length; i++) {
-            const label = (heads[i].innerText || '').replace(/\s+/g, ' ').trim();
-            if (wanted.has(label)) targets.push([i, wanted.get(label)]);
-          }
-          if (!targets.length) continue;
-          // jqGrid keeps its header and body in two tables that share a column
-          // order, so the body may be elsewhere in the DOM.
-          const bodies = [table, ...document.querySelectorAll('.ui-jqgrid-btable')];
-          for (const body of bodies) {
-            const rows = body.tBodies?.[0]?.rows ?? [];
-            for (let r = 0; r < rows.length; r++) {
-              for (const [i, values] of targets) {
-                const cell = rows[r].cells[i];
-                if (!cell || !cell.innerText.trim()) continue;
-                cell.textContent = values[r % values.length];
-              }
-            }
-          }
-        }
-      }, remote.maskColumns)
-      .catch(() => {});
-  }
-}
-
-/** Refuses to go on if anything on the forbidden list is still readable. */
-async function assertClean(page, remote, scene) {
-  const text = await allFrameText(page);
-  const left = (remote.forbidden ?? []).filter((w) => text.includes(w));
-  if (left.length) {
-    throw new Error(
-      `anonymisation missed: ${left.join(', ')} — add rules to REMOTES.${scene.remote}`,
-    );
-  }
-}
-
-/**
- * Films a system we cannot boot: attach to a Chrome the reader has already
- * signed in, open a tab in that same context so it shares the session, rewrite
- * the identifying names in place, and pan down it.
- *
- * Deliberately never touches a password. See REMOTES in scenes/manifest.mjs
- * for how to start that Chrome.
- */
-async function captureRemote(scene) {
-  const remote = REMOTES[scene.remote];
-  if (!remote) throw new Error(`unknown remote "${scene.remote}" in scenes/manifest.mjs`);
-  const frames = scene.frames ?? DEFAULT_FRAMES;
-
-  let browser;
-  try {
-    browser = await chromium.connectOverCDP(remote.cdp);
-  } catch {
-    throw new Error(
-      `no debuggable Chrome on ${remote.cdp}. Start one and sign in first:\n` +
-        `  open -na "Google Chrome" --args --remote-debugging-port=9222 --user-data-dir="$HOME/.chrome-otto"`,
-    );
-  }
-
-  const context = browser.contexts()[0];
-  if (!context) throw new Error('the debuggable Chrome has no open window');
-
-  // Prefer a tab that is already on the system and already signed in. This app
-  // keeps its session in a `jsessionid` carried on the URL, so a fresh tab —
-  // even in the same context, with all the same cookies — lands back on the
-  // login page. Reuse the reader's tab and leave the navigation alone.
-  const origin = new URL(remote.url).origin;
-
-  let page = null;
-  for (const candidate of context.pages()) {
-    if (!candidate.url().startsWith(origin)) continue;
-    const text = await allFrameText(candidate);
-    if (!remote.signedInText || text.includes(remote.signedInText)) {
-      page = candidate;
-      break;
-    }
-  }
-  const borrowed = Boolean(page);
-  if (!page) page = await context.newPage();
-
-  try {
-    for (const vp of pending(scene)) {
-      const dir = prepare(scene.id, vp);
-      // A CDP-attached context has a fixed deviceScaleFactor, so film at the
-      // output resolution directly rather than scaling a smaller viewport up.
-      await page.setViewportSize(remote.viewports[vp.key]);
-      // Navigating a borrowed tab risks bouncing it back to the login page —
-      // it is already where we want it.
-      if (!borrowed) await page.goto(remote.url, { waitUntil: 'networkidle', timeout: 90_000 });
-      await page.waitForTimeout(2500);
-
-      const inner =
-        page.frames().find((f) => f.name() === remote.frame) ?? page.mainFrame();
-      if (remote.settleSelector) {
-        await inner.waitForSelector(remote.settleSelector, { timeout: 30_000 });
-      }
-      await page.waitForTimeout(1500);
-
-      if (remote.signedInText && !(await allFrameText(page)).includes(remote.signedInText)) {
-        throw new Error(
-          `that Chrome is not signed in to ${remote.url} — log in there first, then re-run`,
-        );
-      }
-
-      await anonymise(page, remote);
-      await assertClean(page, remote, scene);
-
-      // Kill the app's own entrance animation so frame 1 is already settled.
-      for (const f of page.frames()) {
-        await f
-          .addStyleTag({
-            content: '*,*::before,*::after{animation:none!important;transition:none!important}',
-          })
-          .catch(() => {});
-      }
-
-      // The document itself may not scroll at all — this app puts its grid in
-      // an inner container. Pan whatever actually moves.
-      const sel = remote.scrollSelector ?? null;
-      const travel = await inner.evaluate((s) => {
-        const el = s ? document.querySelector(s) : null;
-        return el
-          ? el.scrollHeight - el.clientHeight
-          : document.documentElement.scrollHeight - window.innerHeight;
-      }, sel);
-      const span = Math.max(0, travel - 24);
-      if (span < 40) {
-        console.log(`  note    ${scene.id}-${vp.key}: only ${span}px of travel — the pan will be subtle`);
-      }
-
-      for (let i = 0; i < frames; i++) {
-        const t = i / (frames - 1);
-        const eased = t * t * (3 - 2 * t);
-        await inner.evaluate(
-          ([s, y]) => {
-            const el = s ? document.querySelector(s) : null;
-            if (el) el.scrollTop = y;
-            else window.scrollTo(0, y);
-          },
-          [sel, Math.round(span * eased)],
-        );
-        await page.waitForTimeout(16);
-        // Grids like this one re-render their rows as they scroll, which puts
-        // the original values straight back. Re-run the rewrite every frame
-        // rather than trusting one pass at the start.
-        await anonymise(page, remote);
-        await page.screenshot({ path: path.join(dir, frameName(i)) });
-      }
-      await assertClean(page, remote, scene);
-
-      console.log(`  capture ${scene.id}-${vp.key} (${frames} frames, pan ${Math.round(span)}px)`);
-    }
-  } finally {
-    if (borrowed) {
-      // Hand the tab back the way we found it.
-      await page.setViewportSize(null).catch(() => {});
-    } else {
-      await page.close().catch(() => {});
-    }
-    // Detach only — this is the reader's browser, not ours to close.
-    await browser.close();
-  }
-}
-
 // ------------------------------------------------------------------- main
 
 async function main() {
@@ -490,30 +309,25 @@ async function main() {
   }
   if (todo.length === 0) return;
 
-  // A remote scene brings its own (already-running) browser.
-  for (const scene of todo.filter((s) => s.kind === 'remote')) await captureRemote(scene);
-
-  const rest = todo.filter((s) => s.kind !== 'remote');
-  if (rest.length === 0) return;
-
   const browser = await chromium.launch();
-  let booted = false;
   try {
-    for (const scene of rest) {
-      if (scene.kind === 'explainer') {
-        await captureExplainer(browser, scene);
-        continue;
-      }
+    // Explainers first and in parallel — they are static pages with nothing
+    // shared between them, and they are the bulk of a full shoot.
+    await captureExplainers(browser, todo.filter((s) => s.kind === 'explainer'));
+
+    // App scenes stay strictly serial. They all drive one booted product
+    // against schedule_project's throwaway E2E database, which the boot below
+    // drops and rebuilds, and they sign in and out of it as they go — two of
+    // them at once would be filming each other's session.
+    const apps = todo.filter((s) => s.kind === 'app');
+    if (apps.length) {
       // One boot serves every app scene; the seed and the translation pass run
       // with it, so the database is fresh for the whole capture. There is only
       // one filmable product today — a second would need its own boot here to
       // go with its own entry in RECIPES.
-      if (!booted) {
-        await schedule.bootApp();
-        schedule.setTheme(TENANT.slug, TENANT.theme);
-        booted = true;
-      }
-      await captureApp(browser, scene);
+      await schedule.bootApp();
+      schedule.setTheme(TENANT.slug, TENANT.theme);
+      for (const scene of apps) await captureApp(browser, scene);
     }
   } finally {
     await browser.close();

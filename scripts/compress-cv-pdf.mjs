@@ -1,5 +1,5 @@
-// Produces the copy of the CV the site serves, from `Kevin_CV.pdf` at the repo
-// root. That is the 2-page CV a reader downloads — NOT `CV.pdf`, the 9-page
+// Produces the copy of the CV the site serves, from `Kevin_Wu_CV.pdf` at the
+// repo root. That is the 2-page CV a reader downloads — NOT `CV.pdf`, the 9-page
 // long form `render-pdf-pages.mjs` cuts the portfolio stills out of. Both used
 // to point at the same file; they are different documents now, and pointing
 // this one back at `CV.pdf` would quietly hand out the wrong CV. Neither
@@ -10,7 +10,7 @@
 // FlateDecode — lossless screenshots pasted in from the design tool, and
 // re-encoding those as JPEG was where the 60% went. Against a master already
 // under 200KB the saving is small and this is a document people print, so the
-// site currently serves `Kevin_CV.pdf` untouched. The page text is vector and
+// site currently serves the master untouched. The page text is vector and
 // is never touched either way: the extracted text layer of the output is
 // byte-identical to the master's.
 //
@@ -26,7 +26,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const SRC = path.join(root, 'Kevin_CV.pdf');
+const SRC = path.join(root, 'Kevin_Wu_CV.pdf');
 const OUT = path.join(root, 'public', 'cv', 'Kevin_Wu_CV.pdf');
 
 /**

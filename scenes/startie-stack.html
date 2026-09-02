@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="scene.css">
+<script src="shell.js"></script>
 <style>
   /* Two deployments and three services, and one request walking through them.
      The roles matter as much as the boxes: the same endpoint answers three
@@ -185,9 +186,6 @@
 
 <script>
 (function () {
-  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
-  const seg = (p, from, to) => { const x = clamp((p - from) / (to - from), 0, 1); return x * x * (3 - 2 * x); };
-  const $ = (id) => document.getElementById(id);
   const portrait = () => matchMedia('(max-aspect-ratio: 3/4)').matches;
   const command = () => (portrait() ? 'two deployments' : 'two deployments, one request');
 
@@ -226,11 +224,7 @@
     el.style.transform = `translateY(${(1 - t) * (lift == null ? 12 : lift)}px)`;
   }
 
-  let last = { i: 0, total: 2 };
-
-  window.__setFrame = function (i, total) {
-    last = { i, total };
-    const p = total > 1 ? clamp(i / (total - 1), 0, 1) : 0;
+  defineScene(function (p) {
     wirePaths();
 
     const text = command();
@@ -272,11 +266,7 @@
     const scale = 1 + p * 0.045 - settle * 0.012;
     board.style.transform = `translateY(${(0.5 - p) * 24}px) scale(${scale.toFixed(4)})`;
 
-    document.documentElement.dataset.frame = String(i);
-  };
-
-  window.__setFrame(0, 2);
-  window.addEventListener('resize', () => window.__setFrame(last.i, last.total));
+  });
 })();
 </script>
 </body>
