@@ -74,7 +74,7 @@ export const EXPERIENCE: Role[] = [
   },
   {
     id: 'cti',
-    period: '10/2025 – Now',
+    period: '10/2025 – 09/2026',
     current: true,
     projects: [
       {
@@ -280,7 +280,7 @@ export const PROJECTS: Project[] = [
   },
   {
     slug: 'smc',
-    period: '10/2025 – Now',
+    period: '10/2025 – 09/2026',
     tech: ['Vue.js', 'Node.js', 'WebSockets', 'Microsoft SQL Server', 'Golang', 'Genesys Cloud'],
     // Not screenshots. A live client contact centre is not something to film,
     // so these are the closing frames of the three explainers — the same boards
