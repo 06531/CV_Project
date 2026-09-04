@@ -75,7 +75,6 @@ export const EXPERIENCE: Role[] = [
   {
     id: 'cti',
     period: '10/2025 – 09/2026',
-    current: true,
     projects: [
       {
         id: 'smc',

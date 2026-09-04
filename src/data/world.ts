@@ -63,8 +63,8 @@ export const PROJECT_WORLDS: Partial<Record<ProjectSlug, WorldScene[]>> = {
     scene('schedule-booking', 'explainer'),
   ],
   // Explainers for the strictest reason of the five: SMC is a client's
-  // production contact centre and the current job, so there is nothing here it
-  // would be right to film. Every id, queue and path in the three is invented.
+  // production contact centre, so there is nothing here it would be right to
+  // film. Every id, queue and path in the three is invented.
   smc: [
     scene('smc-chat', 'explainer'),
     scene('smc-routing', 'explainer'),

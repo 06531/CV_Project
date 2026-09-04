@@ -75,9 +75,9 @@ export const SCENES = [
   { id: 'schedule-booking', kind: 'explainer', frames: 140 },
 
   // SMC. Explainers for the strictest reason of the five: it is a client's
-  // production contact centre and the current job, so there is nothing here it
-  // would be right to film even if it could be reached. Drawn from the CV's
-  // own description, with every id, queue, path and figure invented.
+  // production contact centre, so there is nothing here it would be right to
+  // film even if it could be reached. Drawn from the CV's own description,
+  // with every id, queue, path and figure invented.
   { id: 'smc-chat', kind: 'explainer', frames: 160 },
   { id: 'smc-routing', kind: 'explainer', frames: 150 },
   { id: 'smc-report', kind: 'explainer', frames: 150 },
