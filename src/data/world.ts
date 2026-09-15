@@ -50,6 +50,9 @@ const scene = (
 export const INTRO_WORLD: WorldScene[] = [
   scene('agents', 'explainer'),
   scene('agents-handoff', 'explainer'),
+  // The first two both have a person in them. This one is the work that runs
+  // when there isn't one.
+  scene('agents-unattended', 'explainer'),
 ];
 
 /** One deck per project, played at the top of its case study. */

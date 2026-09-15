@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>agents-unattended — scroll-world explainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="scene.css">
+<script src="shell.js"></script>
+<style>
+  /* Beat three: the two beats before this one both have a person in them. This
+     one is what runs when nobody is at the keyboard — a weekly task runner and
+     a six-hourly production scan, each ending in a file that records what
+     happened, including when nothing did.
+
+     Drawn from the real pair: `~/.claude/auto-task/run-weekly.sh` (launchd,
+     Saturdays 06:07) and `schedule_project/scripts/health-scan.mjs`. The two
+     lines at the bottom are the point of the scene: unattended is not the same
+     as unchecked.
+
+     Shared shell lives in scene.css; only this scene's own layout is here. */
+
+  #board { max-width: 940px; }
+
+  @media (min-aspect-ratio: 3/4) {
+    .body { padding: clamp(16px, 2.3vmin, 26px); }
+  }
+
+  .lanes { margin-top: clamp(11px, 1.7vmin, 20px); display: flex; flex-direction: column; gap: clamp(9px, 1.4vmin, 16px); }
+
+  .lane {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: clamp(8px, 1.2vmin, 14px);
+  }
+
+  /* When it fires. A clock, not a trigger the reader pressed. */
+  .clock {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: clamp(5px, .7vmin, 8px) clamp(7px, 1vmin, 11px);
+    border: 1px solid var(--line); border-radius: 8px;
+    background: var(--surface-2);
+    font-family: var(--mono); font-size: clamp(9px, .98vmin, 11.5px); font-weight: 700;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+  .clock svg { width: 13px; height: 13px; stroke: var(--accent); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  .steps { display: flex; align-items: center; gap: clamp(4px, .6vmin, 7px); flex-wrap: nowrap; min-width: 0; }
+  .step {
+    flex: 0 1 auto;
+    padding: clamp(4px, .6vmin, 7px) clamp(6px, .9vmin, 10px);
+    border: 1px solid var(--line); border-radius: 7px;
+    background: var(--surface);
+    font-family: var(--mono); font-size: clamp(8.5px, .92vmin, 11px);
+    color: var(--muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .step.is-lead { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+  .step.is-done { color: var(--ink); }
+  .arrow { flex: none; color: var(--line); font-size: clamp(9px, 1vmin, 12px); }
+
+  /* The run is short and the log card is pinned right, which left a hand's
+     width of nothing between them. This is that gap, drawn as the thing it
+     actually is: the last step feeding the file. */
+  .tail {
+    flex: 1 1 auto; min-width: clamp(18px, 3vmin, 60px);
+    border-top: 1px dashed var(--line);
+    margin: 0 clamp(4px, .6vmin, 7px);
+  }
+
+  /* Where each lane ends: a file, and the line it just wrote. */
+  .logcard {
+    min-width: clamp(132px, 17vmin, 196px);
+    padding: clamp(5px, .75vmin, 9px) clamp(7px, 1vmin, 11px);
+    border: 1px solid var(--line); border-radius: 8px;
+    background: var(--surface);
+  }
+  .logcard.is-lead { border-color: var(--ok); }
+  .logcard .file { font-family: var(--mono); font-size: clamp(8.5px, .92vmin, 11px); font-weight: 700; color: var(--ink); white-space: nowrap; }
+  .logcard .line { margin-top: 3px; font-family: var(--mono); font-size: clamp(7.5px, .82vmin, 9.5px); color: var(--muted); white-space: nowrap; min-height: 1.3em; }
+  .logcard.is-lead .line { color: var(--ok); }
+
+  /* The two rules that make unattended safe. This is the scene's argument. */
+  .guards { margin-top: clamp(12px, 1.9vmin, 22px); display: flex; flex-direction: column; gap: clamp(5px, .8vmin, 8px); }
+  .guard {
+    display: flex; align-items: baseline; gap: clamp(7px, 1vmin, 11px);
+    font-family: var(--mono); font-size: clamp(9px, .98vmin, 11.5px);
+    color: var(--muted);
+  }
+  .guard b { color: var(--accent); font-weight: 700; white-space: nowrap; }
+
+  @media (max-aspect-ratio: 3/4) {
+    .lanes { margin-top: 9px; gap: 9px; }
+    /* Three columns do not fit 360px. Clock on its own line, steps wrapping
+       under it, the log card last. */
+    .lane { grid-template-columns: 1fr; gap: 5px; }
+    .clock { justify-self: start; padding: 4px 7px; font-size: 10px; }
+    .steps { flex-wrap: wrap; gap: 4px; }
+    .step { font-size: 9.5px; padding: 4px 6px; }
+    /* Nothing to reach across: the log card is on its own line here. */
+    .tail { display: none; }
+    .logcard { min-width: 0; padding: 5px 7px; }
+    .logcard .file { font-size: 10px; }
+    .logcard .line { font-size: 9px; white-space: normal; }
+    /* The two rules keep their headlines and lose the explanation — the
+       scene's own copy in messages/*.json already says it, and four wrapped
+       lines is the difference between fitting a phone frame and not. */
+    .guards { margin-top: 9px; gap: 7px; flex-direction: row; flex-wrap: wrap; }
+    /* Side by side with nothing between them, the two headlines read as one
+       sentence — "commit, never push 000 ≠ down". */
+    .guard { font-size: 10px; }
+    .guard + .guard::before { content: '·'; color: var(--line); margin-right: 7px; }
+    .guard .why { display: none; }
+    .step.only-wide { display: none; }
+    .arrow { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="board">
+    <div class="window">
+      <div class="titlebar">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="name">launchd → claude -p — nobody at the keyboard</span>
+      </div>
+      <div class="body">
+        <div class="prompt"><span class="sigil">$</span> <span id="typed"></span><span class="caret" id="caret"></span></div>
+
+        <div class="lanes">
+          <div class="lane" id="lane0">
+            <span class="clock">
+              <!-- lucide: calendar-clock -->
+              <svg viewBox="0 0 24 24"><path d="M8 2v4M16 2v4M3 10h18"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M12 13v3l2 1"/></svg>
+              SAT 06:07
+            </span>
+            <div class="steps" id="steps0"></div>
+            <div class="logcard" id="log0">
+              <div class="file">AUTO_RUN_LOG.md</div>
+              <div class="line" id="line0"></div>
+            </div>
+          </div>
+
+          <div class="lane" id="lane1">
+            <span class="clock">
+              <!-- lucide: timer -->
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg>
+              every 6h
+            </span>
+            <div class="steps" id="steps1"></div>
+            <div class="logcard" id="log1">
+              <div class="file">HEALTH_LOG.md</div>
+              <div class="line" id="line1"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="guards">
+          <div class="guard" id="guard0"><b>commit, never push</b><span class="why">a scoped tool allowlist, and a person reviews before anything leaves the machine</span></div>
+          <div class="guard" id="guard1"><b>000 ≠ down</b><span class="why">could not connect is not the server failing — a monitor that cries wolf gets ignored</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const COMMAND = 'nobody at the keyboard';
+
+  // Both lanes are real: the weekly one is ~/.claude/auto-task/run-weekly.sh,
+  // the six-hourly one is schedule_project/scripts/health-scan.mjs.
+  const LANES = [
+    ['quota probe', 'task queue', 'headless run', 'typecheck · build', 'commit'],
+    ['10 public endpoints', 'retry on 000'],   // the retry chip is dropped in portrait
+  ];
+  // What each lane writes when it is done. The first is verbatim from the real
+  // log — the pipeline reports an empty queue as carefully as a full one, which
+  // is the only reason its silence can be trusted.
+  const LINES = ['09-14 04:09 · queue empty', '10 / 10 · 200'];
+
+  const board = $('board'), typed = $('typed'), caret = $('caret');
+  const lanes = [$('lane0'), $('lane1')];
+  const logs = [$('log0'), $('log1')];
+  const lines = [$('line0'), $('line1')];
+  const guards = [$('guard0'), $('guard1')];
+
+  const steps = LANES.map((names, i) => {
+    $('steps' + i).innerHTML = names
+      // The last step of the scan lane is detail a phone has no room for.
+      .map((n, k) => `<span class="step${i === 1 && k === 1 ? ' only-wide' : ''}">${n}</span>`)
+      .join('<span class="arrow">›</span>') + '<span class="tail"></span>';
+    return Array.from($('steps' + i).querySelectorAll('.step'));
+  });
+  const tails = [0, 1].map((i) => $('steps' + i).querySelector('.tail'));
+
+  function reveal(el, t, lift) {
+    el.style.opacity = t;
+    el.style.transform = `translateY(${(1 - t) * (lift == null ? 14 : lift)}px)`;
+  }
+
+  /**
+   * One lane's steps lighting up in order, then its log line being written.
+   *
+   * The line gets its own window rather than being derived from `walk`: `walk`
+   * tops out at exactly `list.length`, so anything scaled off "how far past the
+   * end are we" can never reach 1 and the line stops half-typed.
+   */
+  function runLane(p, i, from, to, lineTo) {
+    const list = steps[i];
+    // 0..list.length — integer part is which step is live.
+    const walk = seg(p, from, to) * list.length;
+    list.forEach((el, k) => {
+      reveal(el, seg(p, from - 0.06 + k * 0.015, from + 0.02 + k * 0.015), 6);
+      el.classList.toggle('is-lead', walk > k && walk <= k + 1);
+      el.classList.toggle('is-done', walk > k + 1);
+    });
+
+    // The line types itself out, so the file is visibly being appended to
+    // rather than having always said this.
+    const typed = seg(p, to - 0.02, lineTo);
+    tails[i].style.opacity = typed;
+    logs[i].classList.toggle('is-lead', typed > 0);
+    lines[i].textContent = LINES[i].slice(0, Math.round(typed * LINES[i].length));
+  }
+
+  defineScene(function (p) {
+    // 0.00–0.08 — the caption types itself out. Short: this scene opens on
+    // another one's finished frame, so an empty board reads as a dead cut.
+    const chars = Math.round(seg(p, 0.01, 0.08) * COMMAND.length);
+    typed.textContent = COMMAND.slice(0, chars);
+    caret.style.opacity = p > 0.11 ? 0 : (Math.floor(p * 44) % 2 ? 0.25 : 1);
+
+    // 0.04–0.20 — the two clocks arrive, the weekly one first.
+    reveal(lanes[0], seg(p, 0.04, 0.16));
+    reveal(lanes[1], seg(p, 0.12, 0.24));
+
+    // 0.16–0.66 — the weekly run walks its five steps and writes its report.
+    runLane(p, 0, 0.16, 0.54, 0.66);
+    // 0.58–0.80 — then the scan, which is two steps and much more often.
+    runLane(p, 1, 0.58, 0.72, 0.80);
+
+    // 0.76–0.96 — and the two rules that make any of it safe to leave alone.
+    guards.forEach((el, k) => reveal(el, seg(p, 0.76 + k * 0.07, 0.88 + k * 0.07), 8));
+
+    // Continuous slow push-in so no stretch of the clip is a frozen frame.
+    const settle = seg(p, 0.92, 1);
+    const scale = 1 + p * 0.04 - settle * 0.011;
+    board.style.transform = `translateY(${(0.5 - p) * 22}px) scale(${scale.toFixed(4)})`;
+  });
+})();
+</script>
+</body>
+</html>

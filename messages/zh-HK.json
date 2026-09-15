@@ -28,7 +28,7 @@
   },
   "about": {
     "heading": "關於我",
-    "body": "我是一位喜歡把邏輯構想變成實際運作系統的軟件開發者。在多個客戶專案的實戰中,我學會快速上手新工具、適應節奏急速的環境;同時我以 Claude Code 作為 agentic 開發夥伴 —— 協調多個 AI agent、把重複的工程工作自動化、並執行 AI 輔助的程式碼與安全審查 —— 令全端功能可以更快交付而唔犧牲質素。"
+    "body": "我是一位喜歡把邏輯構想變成實際運作系統的軟件開發者。在多個客戶專案的實戰中,我學會快速上手新工具、適應節奏急速的環境;同時我以 Claude Code 作為 agentic 開發夥伴 —— 協調多個 AI agent、執行 AI 輔助的程式碼與安全審查,並把重複的工作交給排程的無人值守執行、由它自行驗證後才提交 —— 令全端功能可以更快交付而唔犧牲質素。"
   },
   "experience": {
     "heading": "工作經驗",
@@ -46,8 +46,10 @@
             "bullets": [
               "建構多公司課程平台:QR code 落地報名、月曆式報名、跨公司時間衝突檢查、角色分級的員工管理、Google SSO 登入、內嵌地圖(Leaflet / OpenStreetMap),以及 Stripe 收費骨架。",
               "設計靈活的排課引擎:由每週循環規則自動產生可編輯的堂次表(可單堂改日期/時間、加堂或跳堂),並提供一鍵「續期」流程把設定沿用到下一期。",
-              "以 Claude Code 的 AI 輔助多 agent 工作流由頭到尾開發 —— 按任務複雜度做 model routing、實作前先用 plan mode 設計,以及一條每週自動執行、會自行驗證(typecheck / build)並提交的任務管線。",
-              "加固後端 —— 每 IP 流量限制、安全標頭(helmet)、JWT fail-fast、防止帳號枚舉 —— 並以 AI 驅動的程式碼與安全審查,找出並修復公司註冊流程中的帳號冒用漏洞。"
+              "以 Claude Code 的 AI 輔助多 agent 工作流由頭到尾開發 —— 按任務複雜度做 model routing,實作前先用 plan mode 設計。",
+              "加固後端 —— 每 IP 流量限制、安全標頭(helmet)、JWT fail-fast、防止帳號枚舉 —— 並以 AI 驅動的程式碼與安全審查,找出並修復公司註冊流程中的帳號冒用漏洞。",
+            "建立每週無人值守的自動執行管線(launchd \u2192 headless Claude Code):動手之前先探額度,在收窄的工具白名單內處理任務隊列,跑完自行以 typecheck 與 build 驗證,只提交不推送,讓人先覆核;每星期都寫一份報告,連沒有任務可做的星期也照寫。",
+            "為線上環境加上每六小時一次的巡查,把發現寫入紀錄。它的價值在於拒絕聲稱自己看不到的事:連不上就記成連不上,不當作服務中斷;而一個實際只覆蓋六分鐘的執行日誌查詢,寧可整段移除,也不留著它在看不見的時段回報「零錯誤」。"
             ]
           }
         }
@@ -127,7 +129,8 @@
     "notes": {
       "multiAgent": "AI 多 agent 協調",
       "promptEngineering": "Prompt 與工作流設計(自訂 skills / hooks)",
-      "headlessAutomation": "Headless AI 任務自動化(排程 agent)"
+      "headlessAutomation": "Headless AI 任務自動化(排程 agent)",
+    "monitoringLoops": "無人值守線上巡查(界定範圍、紀錄發現)"
     }
   },
   "education": {
@@ -189,6 +192,11 @@
           "eyebrow": "冇嘢可以繞過檢查",
           "title": "之後仲要過到關",
           "body": "Developer 交畀 tester。兩個語言檔要一齊改,唔係切語言就見到 raw key;typecheck 同 build 過咗,先當件事做完。"
+        },
+        "agents-unattended": {
+          "eyebrow": "冇人坐喺鍵盤前",
+          "title": "有啲嘢係我唔喺度嗰陣自己跑",
+          "body": "每星期一次無人值守嘅 headless run:先探額度,喺收窄咗嘅工具白名單入面讀任務隊列,跑完自己 typecheck 同 build,然後只 commit、唔 push —— 出門前一定有人睇過。另一條線每六個鐘掃一次線上環境。兩條線連「冇嘢發生」嗰啲星期都照寫低:淨係出事先出聲嘅監察,你好快會當佢透明。"
         },
         "otto-desk": {
           "eyebrow": "一個資料夾,一票貨",

@@ -39,6 +39,9 @@ export const SCENES = [
   // /portfolio's opener — how the work gets made, in two beats.
   { id: 'agents', kind: 'explainer', frames: 160 },
   { id: 'agents-handoff', kind: 'explainer', frames: 160 },
+  // Beat three: what runs when nobody is at the keyboard. Drawn from the real
+  // pair — the launchd weekly task runner and the six-hourly production scan.
+  { id: 'agents-unattended', kind: 'explainer', frames: 160 },
 
   // Multi-tenant course scheduling platform. Cut from six shots rather than
   // panned down one page: the single page this used to film spent half the clip
