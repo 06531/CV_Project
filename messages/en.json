@@ -23,6 +23,7 @@
     "viewPortfolio": "View portfolio",
     "email": "Email",
     "phone": "Phone",
+    "website": "Website",
     "location": "Location",
     "locationValue": "Hong Kong"
   },
@@ -48,8 +49,8 @@
               "Designed a flexible scheduling engine: weekly runs auto-generate an editable per-session table (individual date/time overrides, add or skip sessions) with a one-click \"renew term\" flow that carries settings forward.",
               "Developed it end-to-end with an AI-assisted, multi-agent workflow using Claude Code — model routing by task complexity, and plan-mode design before implementation.",
               "Hardened the backend — per-IP rate limiting, security headers (helmet), JWT fail-fast, user-enumeration protection — and applied AI-driven code & security review to catch and fix an account-impersonation vulnerability in the company-registration flow.",
-            "Built an unattended weekly pipeline (launchd \u2192 headless Claude Code): it probes the usage quota before spending a run, works a task queue under a narrow tool allowlist, self-verifies with typecheck and build, and commits without pushing so a human reviews first — appending a report every week, including the weeks it did nothing.",
-            "Added a production scan on a six-hour cadence over the public endpoints, logging what it found. Its value came from what it refused to claim: unreachable is recorded as unreachable rather than as an outage, and a runtime-log query that only ever covered six minutes was removed rather than left reporting \"0 errors\" over windows it could not see."
+              "Built an unattended weekly pipeline (launchd → headless Claude Code): it probes the usage quota before spending a run, works a task queue under a narrow tool allowlist, self-verifies with typecheck and build, and commits without pushing so a human reviews first — appending a report every week, including the weeks it did nothing.",
+              "Added a production scan on a six-hour cadence over the public endpoints, logging what it found. Its value came from what it refused to claim: unreachable is recorded as unreachable rather than as an outage, and a runtime-log query that only ever covered six minutes was removed rather than left reporting \"0 errors\" over windows it could not see."
             ]
           }
         }
@@ -130,7 +131,7 @@
       "multiAgent": "AI multi-agent orchestration",
       "promptEngineering": "Prompt & workflow engineering (custom skills / hooks)",
       "headlessAutomation": "Headless AI task automation (scheduled agents)",
-    "monitoringLoops": "Unattended production monitoring (scoped checks, logged findings)"
+      "monitoringLoops": "Unattended production monitoring (scoped checks, logged findings)"
     }
   },
   "education": {

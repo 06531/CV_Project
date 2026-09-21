@@ -1,4 +1,4 @@
-import { ArrowRight, Download, Mail, MapPin, Phone } from 'lucide-react';
+import { ArrowRight, Download, Globe, Mail, MapPin, Phone } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { PROFILE } from '@/data/cv';
 import { Link } from '@/i18n/navigation';
@@ -27,6 +27,12 @@ export default function Hero() {
           <Phone className="size-3.5 text-accent" aria-hidden />
           <a href={PROFILE.phoneHref} className="hover:text-ink">
             {PROFILE.phone}
+          </a>
+        </li>
+        <li className="flex items-center gap-2">
+          <Globe className="size-3.5 text-accent" aria-hidden />
+          <a href={PROFILE.websiteHref} className="hover:text-ink">
+            {PROFILE.website}
           </a>
         </li>
         <li className="flex items-center gap-2">

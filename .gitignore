@@ -51,3 +51,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Job ads and application scraps — same reason as /_material: not mine to publish.
+/cover_letter_data

@@ -1,4 +1,4 @@
-import { Download, Mail, MapPin, Phone } from 'lucide-react';
+import { Download, Globe, Mail, MapPin, Phone } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { PROFILE } from '@/data/cv';
 
@@ -34,6 +34,15 @@ export default function ProfileAside() {
           <dd>
             <a href={PROFILE.phoneHref} className="text-muted hover:text-accent">
               {PROFILE.phone}
+            </a>
+          </dd>
+        </div>
+        <div className="flex items-start gap-2">
+          <dt className="sr-only">{t('website')}</dt>
+          <Globe className="mt-0.5 size-3.5 shrink-0 text-accent" aria-hidden />
+          <dd className="break-all">
+            <a href={PROFILE.websiteHref} className="text-muted hover:text-accent">
+              {PROFILE.website}
             </a>
           </dd>
         </div>

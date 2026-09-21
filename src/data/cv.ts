@@ -26,6 +26,13 @@ export const PROFILE = {
   phone: '+852 66812652',
   phoneHref: 'tel:+85266812652',
   email: 'hi06531@gmail.com',
+  /**
+   * Written out rather than derived from `SITE_URL`: that one is whatever the
+   * deployment happens to be — a preview hash, or localhost while printing the
+   * page at home — and this is the address a reader is meant to type in.
+   */
+  website: 'kevin-wu-cv.vercel.app',
+  websiteHref: 'https://kevin-wu-cv.vercel.app',
   location: 'Hong Kong',
   pdf: '/api/cv/download',
 } as const;
