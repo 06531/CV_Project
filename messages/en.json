@@ -1,7 +1,7 @@
 {
   "meta": {
-    "title": "Kevin Wu — Software Developer",
-    "description": "CV of Kevin Wu, a Hong Kong software developer working across React, Vue, Node.js, Java and Golang.",
+    "title": "Kevin Wu — Full-Stack Software Developer",
+    "description": "CV of Kevin Wu, a Hong Kong full-stack developer with 3+ years building production systems in React, Vue.js, Node.js, Java and Go.",
     "portfolioTitle": "Portfolio — Kevin Wu"
   },
   "nav": {
@@ -17,8 +17,8 @@
     "language": "Language"
   },
   "hero": {
-    "title": "Software Developer",
-    "tagline": "I turn logical ideas into working systems — and ship them faster with an AI-assisted workflow.",
+    "title": "Full-Stack Software Developer",
+    "tagline": "3+ years building production systems for supply-chain, warehouse and contact-centre clients — and shipping faster with an AI-assisted workflow.",
     "downloadCv": "Download CV",
     "viewPortfolio": "View portfolio",
     "email": "Email",
@@ -29,7 +29,7 @@
   },
   "about": {
     "heading": "About me",
-    "body": "A software developer who enjoys turning logical ideas into working systems. Through hands-on client project work, I've learned to quickly pick up new tools and adapt to fast-paced environments, and I use Claude Code as an agentic development partner — orchestrating multiple AI agents, running AI-assisted code and security reviews, and leaving scheduled headless runs to do the recurring work and verify themselves before they commit — to ship full-stack features faster without sacrificing quality."
+    "body": "Full-stack developer with 3+ years of commercial experience in Hong Kong, building and supporting production systems for supply-chain, warehouse and contact-centre clients. Front end in Vue.js, React and React Native; back end in Node.js, Java and Go (Golang); data in Microsoft SQL Server, MySQL and PostgreSQL. Experienced with real-time features (WebSockets / Socket.io), role-based access control, PDF and report generation, and daily production support. I use Claude Code as an AI-assisted development partner — multi-agent workflows, AI code and security review, and scheduled headless runs that verify their own work before committing — to ship faster without lowering the bar."
   },
   "experience": {
     "heading": "Work experience",
@@ -39,18 +39,17 @@
     "roles": {
       "schedule": {
         "company": "Multi-tenant Course Scheduling Platform",
-        "role": "Personal Project",
+        "role": "Full-Stack Developer (Personal Project)",
         "projects": {
           "main": {
             "name": "Course platform for multiple companies",
             "description": "A multi-company course platform where each school gets its own URL, teachers manage their own courses, and students scan a QR code to browse a calendar and enrol.",
             "bullets": [
-              "Built a multi-company course platform: QR-code onboarding, month-calendar enrolment, cross-company time-conflict checks, role-based staff management, Google SSO sign-in, embedded location maps (Leaflet / OpenStreetMap), and a Stripe billing skeleton.",
-              "Designed a flexible scheduling engine: weekly runs auto-generate an editable per-session table (individual date/time overrides, add or skip sessions) with a one-click \"renew term\" flow that carries settings forward.",
-              "Developed it end-to-end with an AI-assisted, multi-agent workflow using Claude Code — model routing by task complexity, and plan-mode design before implementation.",
-              "Hardened the backend — per-IP rate limiting, security headers (helmet), JWT fail-fast, user-enumeration protection — and applied AI-driven code & security review to catch and fix an account-impersonation vulnerability in the company-registration flow.",
-              "Built an unattended weekly pipeline (launchd → headless Claude Code): it probes the usage quota before spending a run, works a task queue under a narrow tool allowlist, self-verifies with typecheck and build, and commits without pushing so a human reviews first — appending a report every week, including the weeks it did nothing.",
-              "Added a production scan on a six-hour cadence over the public endpoints, logging what it found. Its value came from what it refused to claim: unreachable is recorded as unreachable rather than as an outage, and a runtime-log query that only ever covered six minutes was removed rather than left reporting \"0 errors\" over windows it could not see."
+              "Built a multi-tenant course platform end to end (React, TypeScript, Express, PostgreSQL): a URL and QR code per school, month-calendar enrolment, cross-school time-conflict checks, three-tier role-based staff management, Google SSO, embedded maps and a Stripe billing skeleton, with the UI in 3 languages.",
+              "Designed the scheduling engine: a weekly recurrence rule generates an editable per-session table (move, skip or add single sessions), and a one-click \"renew term\" carries the settings into the next term.",
+              "Hardened the API with per-IP rate limiting, security headers (helmet), fail-fast JWT configuration and user-enumeration protection; an AI-assisted security review found an account-impersonation vulnerability in company registration, which I fixed.",
+              "Developed with a Claude Code multi-agent workflow — plan-mode design before implementation, model routing by task complexity — and Playwright end-to-end tests.",
+              "Automated recurring work with a weekly headless Claude Code pipeline (launchd): a quota check before each run, a narrow tool allowlist, self-verification with typecheck and build, and commits left unpushed for human review. A six-hourly production check logs every result and records \"unreachable\" as unreachable rather than reporting a false all-clear."
             ]
           }
         }
@@ -63,20 +62,20 @@
             "name": "SMC Project",
             "description": "A customer engagement and routing system integrated with Genesys Cloud to assign communication channels and live agents for chat interactions, auto-replies, and report generation.",
             "bullets": [
-              "Developed and maintained the Vue.js frontend interface for live agent chat interactions.",
-              "Implemented WebSockets on both frontend and backend for real-time chat messaging and system notifications.",
-              "Built features for agents to search, view, and log customer profiles and historical data during live interactions.",
-              "Configured routing queues with custom trigger conditions and automated actions for chat distribution.",
-              "Developed Node.js backend logic to batch-export CSV reports and chat histories, generating download paths based on user authorization.",
-              "Created background configuration modules for admins to manage multiple dashboard layouts and UI themes.",
-              "Wrote SQL queries and stored procedures in Microsoft SQL Server to handle system data storage and report calculations."
+              "Developed and maintained the Vue.js agent console used for live customer chat.",
+              "Implemented WebSockets on both front end and back end for real-time chat messages and system notifications.",
+              "Built customer-profile search, view and logging so agents can check a customer's history without leaving the conversation.",
+              "Configured routing queues with custom trigger conditions and automated actions (template replies, tagging, routing) for chat distribution.",
+              "Built Node.js batch export of CSV reports and chat histories, with download paths scoped to each user's authorisation.",
+              "Created admin configuration modules for managing multiple dashboard layouts and UI themes.",
+              "Wrote SQL queries and stored procedures in Microsoft SQL Server for data storage and report calculations."
             ]
           },
           "serverIntegration": {
             "name": "Server Integration Backend",
             "description": "High-performance endpoints connecting directly into the core server database.",
             "bullets": [
-              "Developed endpoints using Golang to handle high-performance connections directly into the core server database."
+              "Built high-performance Go (Golang) endpoints connecting directly to the core server database, for reads too heavy for the application tier."
             ]
           }
         }
@@ -89,27 +88,27 @@
             "name": "TDS eDOC Project",
             "description": "A specialized document management system built on Tradelink's \"Trader Documentation Service\" platform for a multinational retail sourcing group. It connects an extensive network of supply chain partners — overseas buyers, sellers and freight forwarders — to facilitate, process and optimize multi-national document exchange and workflow automation.",
             "bullets": [
-              "Developed and maintained the core modules of the global supply chain system and handled daily production support.",
-              "Used JasperReports and XSL-FO to generate standard PDF and XML business documents.",
-              "Wrote Cron jobs to handle real-time data sync, automated system housekeeping, and log rotations.",
+              "Developed and maintained core modules of a supply-chain document platform used by overseas buyers, sellers and freight forwarders, and provided daily production support.",
+              "Generated standard PDF and XML business documents with JasperReports and XSL-FO.",
+              "Wrote cron jobs for scheduled data synchronisation, system housekeeping and log rotation.",
               "Integrated SFTP workflows to automate document transfers from multinational suppliers and forwarders.",
-              "Built a barcode/QR code generation module and implemented logic to format sequential unit codes (prefix + padded zeros + current number) with rollover handling.",
-              "Added Regex validators to enforce strict data formatting (e.g. specific lengths and counts for HS Code verification).",
-              "Implemented Role-Based Access Control (RBAC) to manage user permissions (create, view, edit, delete, lock) across different hierarchy accounts and teams.",
-              "Created a document template feature allowing users to save completed forms for faster re-use later."
+              "Built a barcode / QR code generation module with sequential unit codes (prefix + zero-padded counter) and rollover handling.",
+              "Added regex validation to enforce strict field formats (e.g. HS Code length and segment rules).",
+              "Implemented role-based access control (RBAC) for create / view / edit / delete / lock permissions across hierarchical accounts and teams.",
+              "Created a document template feature so users can save a completed form and reuse it."
             ]
           },
           "kiosk": {
             "name": "CMHK Kiosk Project",
             "description": "A warehouse management system (WMS) kiosk application developed for China Mobile Hong Kong (CMHK), deployed across 4 kiosk units for cargo registration and automated inventory control.",
             "bullets": [
-              "Worked closely with internal teams and frontline staff to design and implement features for daily logistics operations.",
-              "Used Socket.io to build a real-time notification system, connecting client kiosks (receiving/shipping options) with warehouse staff units via push notifications and sound alerts.",
-              "Handled asynchronous status transitions to lock the kiosk UI when a staff member is processing an order, preventing duplicate assignments.",
-              "Developed backend verification for scanned QR codes to check order data, formats, and duplicates against the database in real-time.",
-              "Implemented an automated quantity check that cross-references scanned items and highlights the frontend UI (e.g. changing to green) when matching.",
-              "Generated downloadable PDFs via system-created QR codes upon order completion.",
-              "Built a heartbeat mechanism where each kiosk sends its machine ID via sockets every 20 seconds, triggering a red alert UI if a unit goes offline."
+              "Worked with internal teams and frontline warehouse staff to design and implement features for daily logistics operations.",
+              "Built a real-time notification system with Socket.io, connecting client kiosks (receiving / shipping) to warehouse staff units with push notifications and sound alerts.",
+              "Handled asynchronous status transitions that lock the kiosk UI while a staff member processes an order, preventing duplicate assignments.",
+              "Developed real-time backend verification of scanned QR codes — order data, format and duplicates — against the database.",
+              "Implemented an automated quantity check that cross-references scanned items and turns the line green when it matches.",
+              "Generated downloadable PDFs, reachable through a system-created QR code, on order completion.",
+              "Built a heartbeat mechanism: each kiosk sends its machine ID over a socket every 20 seconds, and an offline unit triggers a red alert."
             ]
           }
         }
@@ -139,7 +138,8 @@
     "items": {
       "tecky": {
         "school": "Tecky Academy",
-        "body": "16 weeks of intensive training on building up programming skill sets and acquiring the skills to see my own projects through to completion."
+        "award": "MicroMaster in AI & Programming · TQUK Level 5 Diploma in AI and Programming (Ofqual-regulated)",
+        "body": "16-week intensive programme building core programming skills and taking my own projects from idea to completion."
       }
     }
   },
@@ -267,7 +267,7 @@
       "schedule": {
         "name": "Multi-tenant Course Scheduling Platform",
         "role": "Personal project · full stack",
-        "note": "Personal project — runs locally, no public deployment.",
+        "note": "Personal project — the public demo runs on seeded test data, not real schools.",
         "summary": "A multi-tenant course platform: every school gets its own URL and QR code, teachers manage courses and rosters from a company dashboard, and students scan once to browse a month calendar and enrol across schools.",
         "highlights": [
           "Multi-tenant by company slug (`/c/:slug`), with a per-company QR code students scan to land straight on the enrolment page — no app install.",

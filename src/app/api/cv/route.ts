@@ -54,6 +54,7 @@ export async function GET(request: Request) {
       id: item.id,
       period: item.period,
       school: education(`items.${item.id}.school`),
+      award: education(`items.${item.id}.award`),
       body: education(`items.${item.id}.body`),
     })),
     projects: PROJECTS.map((project) => ({

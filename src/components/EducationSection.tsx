@@ -22,6 +22,9 @@ export default function EducationSection() {
                 <h3 className="mt-1 font-semibold tracking-tight">
                   {t(`items.${item.id}.school`)}
                 </h3>
+                <p className="mt-1 text-sm font-medium text-ink">
+                  {t(`items.${item.id}.award`)}
+                </p>
                 <p className="mt-2 text-sm leading-relaxed text-muted">
                   {t(`items.${item.id}.body`)}
                 </p>

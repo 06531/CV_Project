@@ -75,6 +75,7 @@ export const EXPERIENCE: Role[] = [
           'Google OAuth (SSO)',
           'Stripe',
           'Leaflet / OpenStreetMap',
+          'Playwright',
         ],
       },
     ],
@@ -90,7 +91,7 @@ export const EXPERIENCE: Role[] = [
       },
       {
         id: 'serverIntegration',
-        tech: ['Golang', 'MSSQL'],
+        tech: ['Go (Golang)', 'Microsoft SQL Server'],
       },
     ],
   },
@@ -101,7 +102,7 @@ export const EXPERIENCE: Role[] = [
       {
         id: 'otto',
         portfolio: 'otto',
-        tech: ['JSP', 'Java', 'Eclipse', 'Tomcat', 'MySQL', 'JasperReports', 'XSL-FO', 'Cron jobs'],
+        tech: ['JSP', 'Java', 'Tomcat', 'MySQL', 'JasperReports', 'XSL-FO', 'Cron jobs'],
       },
       {
         id: 'kiosk',
@@ -132,6 +133,7 @@ export const SKILLS: SkillGroup[] = [
       'JavaScript',
       'Vue.js',
       'React (Next.js)',
+      'React Native',
       'Redux',
       'Recoil',
       'AJAX',
@@ -141,15 +143,15 @@ export const SKILLS: SkillGroup[] = [
   },
   {
     id: 'backend',
-    items: ['Node.js', 'Express', 'Nest.js', 'MikroORM', 'Knex', 'Java', 'Golang'],
+    items: ['Node.js', 'Express', 'NestJS', 'MikroORM', 'Knex', 'Java', 'Go (Golang)'],
   },
   {
     id: 'database',
-    items: ['MySQL', 'MSSQL', 'PostgreSQL'],
+    items: ['MySQL', 'Microsoft SQL Server (MSSQL)', 'PostgreSQL'],
   },
   {
     id: 'devops',
-    items: ['GitHub', 'AWS (EC2, S3, Route 53, IAM)', 'Docker', 'cronjob', 'Jenkins'],
+    items: ['GitHub', 'AWS (EC2, S3, Route 53, IAM)', 'Docker', 'Cron jobs', 'Jenkins', 'Vercel'],
   },
   {
     id: 'ai',
@@ -162,7 +164,8 @@ export const SKILLS: SkillGroup[] = [
       'Git',
       'RESTful API',
       'ERD drafting',
-      'Socket IO',
+      'Socket.io',
+      'Playwright (E2E)',
       'XSL-FO',
       'JasperReports',
       'Tomcat',
@@ -171,7 +174,7 @@ export const SKILLS: SkillGroup[] = [
   },
   {
     id: 'languages',
-    items: ['Cantonese', 'English'],
+    items: ['Cantonese', 'English', 'Mandarin'],
   },
 ];
 
@@ -300,7 +303,7 @@ export const PROJECTS: Project[] = [
   {
     slug: 'otto',
     period: '06/2023 – 09/2025',
-    tech: ['JSP', 'Java', 'Eclipse', 'Tomcat', 'MySQL', 'JasperReports', 'XSL-FO', 'Cron jobs'],
+    tech: ['JSP', 'Java', 'Tomcat', 'MySQL', 'JasperReports', 'XSL-FO', 'Cron jobs'],
     // Boards, like SMC's, and for the same reason — see BOARD_SHOT_WORLDS.
     // These two tiles used to be pages 3 and 4 of the long-form CV, which are
     // mostly screenshots of the running platform: a former employer's system,

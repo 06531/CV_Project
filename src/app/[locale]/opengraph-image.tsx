@@ -44,7 +44,7 @@ export default async function OpengraphImage({ params }: PageProps<'/[locale]'>)
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 20, fontSize: 26, color: '#8b98a9' }}>
-          <span style={{ color: '#22d3ee' }}>React · Node.js · Java · Golang</span>
+          <span style={{ color: '#22d3ee' }}>React · Node.js · Java · Go</span>
           <span>·</span>
           <span>{locale.toUpperCase()}</span>
         </div>
