@@ -112,6 +112,7 @@ export const EXPERIENCE: Role[] = [
       },
     ],
   },
+  { id: 'pizzabox', period: '2018 – 2023', projects: [] },
 ];
 
 export interface SkillGroup {

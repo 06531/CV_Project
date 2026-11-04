@@ -112,6 +112,10 @@
             ]
           }
         }
+      },
+      "pizzabox": {
+        "company": "Pizza Box",
+        "role": "Assistant Manager"
       }
     }
   },
