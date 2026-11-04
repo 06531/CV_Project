@@ -60,7 +60,8 @@ export interface Role {
 export const EXPERIENCE: Role[] = [
   {
     id: 'schedule',
-    period: '2026',
+    period: '09/2026 –',
+    current: true,
     projects: [
       {
         id: 'main',

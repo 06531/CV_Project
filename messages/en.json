@@ -38,8 +38,8 @@
     "viewProject": "View project",
     "roles": {
       "schedule": {
-        "company": "Multi-tenant Course Scheduling Platform",
-        "role": "Full-Stack Developer (Personal Project)",
+        "company": "Quadpaw Tech",
+        "role": "Full-Stack Developer",
         "projects": {
           "main": {
             "name": "Course platform for multiple companies",
