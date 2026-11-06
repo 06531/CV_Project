@@ -115,7 +115,19 @@
       },
       "pizzabox": {
         "company": "Pizza Box",
-        "role": "Assistant Manager"
+        "role": "Assistant Manager",
+        "projects": {
+          "store": {
+            "name": "Store operations",
+            "description": "Assistant manager responsible for running the store day to day.",
+            "bullets": [
+              "Ran the store's day-to-day operations and handled unexpected incidents as they came up.",
+              "Managed food quality with first-in, first-out (FIFO) stock rotation.",
+              "Planned staff rosters.",
+              "Took care of the store's matters, large and small."
+            ]
+          }
+        }
       }
     }
   },

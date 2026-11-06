@@ -60,9 +60,11 @@ export default function ExperienceSection() {
                         </div>
                         <p className="mt-2 text-sm leading-relaxed text-muted">{p('description')}</p>
 
-                        <div className="mt-3">
-                          <TechChips items={project.tech} />
-                        </div>
+                        {project.tech.length > 0 && (
+                          <div className="mt-3">
+                            <TechChips items={project.tech} />
+                          </div>
+                        )}
 
                         <ul className="mt-4 space-y-2">
                           {bullets.map((bullet) => (
