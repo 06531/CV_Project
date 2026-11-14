@@ -103,7 +103,7 @@ export const EXPERIENCE: Role[] = [
       {
         id: 'otto',
         portfolio: 'otto',
-        tech: ['JSP', 'Java', 'Tomcat', 'MySQL', 'JasperReports', 'XSL-FO', 'Cron jobs'],
+        tech: ['JSP', 'Java', 'Spring', 'Tomcat', 'MySQL', 'JasperReports', 'XSL-FO', 'Cron jobs'],
       },
       {
         id: 'kiosk',
@@ -145,7 +145,7 @@ export const SKILLS: SkillGroup[] = [
   },
   {
     id: 'backend',
-    items: ['Node.js', 'Express', 'NestJS', 'MikroORM', 'Knex', 'Java', 'Go (Golang)'],
+    items: ['Node.js', 'Express', 'NestJS', 'MikroORM', 'Knex', 'Java', 'Spring', 'Go (Golang)'],
   },
   {
     id: 'database',
@@ -157,8 +157,8 @@ export const SKILLS: SkillGroup[] = [
   },
   {
     id: 'ai',
-    items: ['Claude Code'],
-    notes: ['multiAgent', 'promptEngineering', 'headlessAutomation', 'monitoringLoops'],
+    items: ['AI Coding', 'Claude Code'],
+    notes: ['multiAgent', 'promptEngineering', 'headlessAutomation', 'monitoringLoops', 'contextManagement'],
   },
   {
     id: 'others',
@@ -305,7 +305,7 @@ export const PROJECTS: Project[] = [
   {
     slug: 'otto',
     period: '06/2023 – 09/2025',
-    tech: ['JSP', 'Java', 'Tomcat', 'MySQL', 'JasperReports', 'XSL-FO', 'Cron jobs'],
+    tech: ['JSP', 'Java', 'Spring', 'Tomcat', 'MySQL', 'JasperReports', 'XSL-FO', 'Cron jobs'],
     // Boards, like SMC's, and for the same reason — see BOARD_SHOT_WORLDS.
     // These two tiles used to be pages 3 and 4 of the long-form CV, which are
     // mostly screenshots of the running platform: a former employer's system,

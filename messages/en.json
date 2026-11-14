@@ -29,7 +29,7 @@
   },
   "about": {
     "heading": "About me",
-    "body": "Full-stack developer with 3+ years of commercial experience in Hong Kong, building and supporting production systems for supply-chain, warehouse and contact-centre clients. Front end in Vue.js, React and React Native; back end in Node.js, Java and Go (Golang); data in Microsoft SQL Server, MySQL and PostgreSQL. Experienced with real-time features (WebSockets / Socket.io), role-based access control, PDF and report generation, and daily production support. I use Claude Code as an AI-assisted development partner — multi-agent workflows, AI code and security review, and scheduled headless runs that verify their own work before committing — to ship faster without lowering the bar."
+    "body": "Full-stack developer with 3+ years of commercial experience in Hong Kong, building and supporting production systems for supply-chain, warehouse and contact-centre clients. Front end in Vue.js, React and React Native; back end in Node.js, Java and Go (Golang); data in Microsoft SQL Server, MySQL and PostgreSQL. Experienced with real-time features (WebSockets / Socket.io), role-based access control, PDF and report generation, and daily production support. I use Claude Code as an AI-assisted development partner — multi-agent workflows, custom skills and hooks, AI code and security review, and scheduled headless runs that verify their own work before committing, plus agent and skill splits that keep each task's context lean, cutting token use and latency — to ship faster without lowering the bar."
   },
   "experience": {
     "heading": "Work experience",
@@ -43,13 +43,13 @@
         "projects": {
           "main": {
             "name": "Course platform for multiple companies",
-            "description": "A multi-company course platform where each school gets its own URL, teachers manage their own courses, and students scan a QR code to browse a calendar and enrol.",
+            "description": "A multi-company course platform where each school gets its own URL, teachers manage their own courses, and students scan a QR code to browse a calendar and enrol. Built end to end with Claude Code (AI-assisted development).",
             "bullets": [
+              "Designed and built end to end with Claude Code: I defined the data model, API and scheduling logic, directed a multi-agent workflow (plan-mode design before implementation, model routing by task complexity) and reviewed every AI change, backed by Playwright end-to-end tests.",
+              "Automated recurring work with a weekly headless Claude Code pipeline (launchd): a quota check before each run, a narrow tool allowlist, self-verification with typecheck and build, and commits left unpushed for human review. A six-hourly production check logs every result and records \"unreachable\" as unreachable rather than reporting a false all-clear.",
               "Built a multi-tenant course platform end to end (React, TypeScript, Express, PostgreSQL): a URL and QR code per school, month-calendar enrolment, cross-school time-conflict checks, three-tier role-based staff management, Google SSO, embedded maps and a Stripe billing skeleton, with the UI in 3 languages.",
               "Designed the scheduling engine: a weekly recurrence rule generates an editable per-session table (move, skip or add single sessions), and a one-click \"renew term\" carries the settings into the next term.",
-              "Hardened the API with per-IP rate limiting, security headers (helmet), fail-fast JWT configuration and user-enumeration protection; an AI-assisted security review found an account-impersonation vulnerability in company registration, which I fixed.",
-              "Developed with a Claude Code multi-agent workflow — plan-mode design before implementation, model routing by task complexity — and Playwright end-to-end tests.",
-              "Automated recurring work with a weekly headless Claude Code pipeline (launchd): a quota check before each run, a narrow tool allowlist, self-verification with typecheck and build, and commits left unpushed for human review. A six-hourly production check logs every result and records \"unreachable\" as unreachable rather than reporting a false all-clear."
+              "Hardened the API with per-IP rate limiting, security headers (helmet), fail-fast JWT configuration and user-enumeration protection; an AI-assisted security review found an account-impersonation vulnerability in company registration, which I fixed."
             ]
           }
         }
@@ -146,7 +146,8 @@
       "multiAgent": "AI multi-agent orchestration",
       "promptEngineering": "Prompt & workflow engineering (custom skills / hooks)",
       "headlessAutomation": "Headless AI task automation (scheduled agents)",
-      "monitoringLoops": "Unattended production monitoring (scoped checks, logged findings)"
+      "monitoringLoops": "Unattended production monitoring (scoped checks, logged findings)",
+      "contextManagement": "Context management (agent/skill split, lean context, lower token use and latency)"
     }
   },
   "education": {
