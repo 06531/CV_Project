@@ -54,3 +54,6 @@ next-env.d.ts
 
 # Job ads and application scraps — same reason as /_material: not mine to publish.
 /cover_letter_data
+
+# Kevin's private data — off limits to AI too (see CLAUDE.md).
+/use_data

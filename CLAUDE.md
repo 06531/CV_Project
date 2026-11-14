@@ -18,6 +18,18 @@
 | `devops` | sonnet | build、部署(Vercel)、環境、npm script、資產產生 script |
 | `docs` | haiku | 更新 `PROGRESS.md`、`README.md`、`CLAUDE.md` |
 
+## CV 評審團(另一隊,唔經 dispatcher)
+
+七個唯讀 agent 評 Kevin 份 CV:`cv-ats`、`cv-hiring-manager`、`cv-boss`、`cv-hr`、
+`cv-competitor`、`cv-senior`、`cv-proofreader`。講「**CV 評審團**」(最好貼埋招聘廣告)或者 `/cv-panel`
+→ 主 session 跟 `.claude/skills/cv-panel/SKILL.md` 並行 spawn 七個、合併、問過先改寫。
+佢哋只出報告,唔准改檔、唔准作數字。
+
+## 求職申請(`/job-apply`)
+
+淨係貼一份 JD → 跟 `.claude/skills/job-apply/SKILL.md`:查 `applied.txt` → 寫求職信 / Self_Intro / Email →
+並行 spawn 四個 `job-screener`(扮該公司 HR / 老闆 / 部門經理 / IT技術經理)審核 → 修正封信 + Self_Intro + Email(三樣都改完)→ `letter-length-reviewer` 審長度刪字 → 報合適度同要注意嘅位。
+
 ## 點觸發
 
 - 「**交畀 IT team:<要求>**」或「**用 dispatcher 處理…**」→ spawn `dispatcher`,佢自己揀角色同 model
@@ -35,6 +47,9 @@
 | 難 | `opus` | 架構設計、跨模組重構、tricky bug、安全分析、效能問題 |
 
 ## 硬規則
+
+- **⛔ `use_data/` 係禁區**(2026-10-22 Kevin:「禁止所有AI讀/寫/改/刪」)—— 主 session 同所有 agent
+  都唔准讀、寫、改、刪、搜尋、列出、引用入面任何檔案;`.claude/settings.json` 亦有 deny rule 擋住
 
 - `dispatcher` **唔准自己改檔**,只准 Read / 搜尋 / spawn
 - `dispatcher` 要**原文轉交**下游成果,唔准壓縮或改寫技術細節

@@ -14,7 +14,14 @@
       "Bash(find * -delete)",
       "Bash(find * -exec rm *)",
       "Bash(git clean -*d*)",
-      "Bash(git reset --hard *)"
+      "Bash(git reset --hard *)",
+      "Read(./use_data/**)",
+      "Edit(./use_data/**)",
+      "Write(./use_data/**)",
+      "Read(//Users/kevin06531/Documents/CV_project/use_data/**)",
+      "Edit(//Users/kevin06531/Documents/CV_project/use_data/**)",
+      "Write(//Users/kevin06531/Documents/CV_project/use_data/**)",
+      "Bash(*use_data*)"
     ]
   },
   "hooks": {
