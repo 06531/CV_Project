@@ -29,7 +29,7 @@
   },
   "about": {
     "heading": "About me",
-    "body": "Full-stack developer with 3+ years of commercial experience in Hong Kong, building and supporting production systems for supply-chain, warehouse and contact-centre clients. Front end in Vue.js, React and React Native; back end in Node.js, Java and Go (Golang); data in Microsoft SQL Server, MySQL and PostgreSQL. Experienced with real-time features (WebSockets / Socket.io), role-based access control, PDF and report generation, and daily production support. I use Claude Code as an AI-assisted development partner — multi-agent workflows, custom skills and hooks, AI code and security review, and scheduled headless runs that verify their own work before committing, plus agent and skill splits that keep each task's context lean, cutting token use and latency — to ship faster without lowering the bar."
+    "body": "Full-stack developer with 3+ years of commercial experience in Hong Kong, building and supporting production systems for supply-chain, warehouse and contact-centre clients. Front end in Vue.js, React and React Native; back end in Node.js, Java and Go (Golang); data in Microsoft SQL Server, MySQL and PostgreSQL. Experienced with real-time features (WebSockets / Socket.io), role-based access control, PDF and report generation, and daily production support. I use Claude Code and Cursor as AI-assisted development partners — multi-agent workflows, custom skills and hooks, AI code and security review, and scheduled headless runs that verify their own work before committing, plus agent and skill splits that keep each task's context lean, cutting token use and latency — to ship faster without lowering the bar."
   },
   "experience": {
     "heading": "Work experience",
@@ -143,9 +143,9 @@
       "languages": "Languages"
     },
     "notes": {
-      "multiAgent": "AI multi-agent orchestration",
-      "promptEngineering": "Prompt & workflow engineering (custom skills / hooks)",
-      "headlessAutomation": "Headless AI task automation (scheduled agents)",
+      "multiAgent": "AI multi-agent orchestration (role-specific agents for build, test, review and security; every code change goes through review)",
+      "promptEngineering": "Prompt & workflow engineering (custom skills loaded on demand; hooks that log every edited path and block destructive commands)",
+      "headlessAutomation": "Headless AI task automation (loops and scheduled runs that typecheck and build to verify themselves, commit but never push, left for human review)",
       "monitoringLoops": "Unattended production monitoring (scoped checks, logged findings)",
       "contextManagement": "Context management (agent/skill split, lean context, lower token use and latency)"
     }

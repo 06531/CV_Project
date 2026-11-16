@@ -29,7 +29,7 @@
   },
   "about": {
     "heading": "關於我",
-    "body": "全端開發工程師,在香港有 3 年以上商業項目經驗,為供應鏈、倉務及客服中心客戶開發及支援正式運行的系統。前端使用 Vue.js、React 及 React Native;後端使用 Node.js、Java 及 Go(Golang);資料庫使用 Microsoft SQL Server、MySQL 及 PostgreSQL。熟悉即時功能(WebSockets / Socket.io)、角色權限控制、PDF 與報表產生,以及日常生產環境支援。我以 Claude Code 作為 AI 輔助開發夥伴 —— 多 agent 工作流、自訂 skill 與 hook、AI 程式碼與安全審查,以及會自行驗證才提交的排程無人值守執行,並按 agent 與 skill 分工,令每個任務只帶入所需上下文,降低 Token 消耗與回應延遲 —— 在不降低質素的前提下更快交付。"
+    "body": "全端開發工程師,在香港有 3 年以上商業項目經驗,為供應鏈、倉務及客服中心客戶開發及支援正式運行的系統。前端使用 Vue.js、React 及 React Native;後端使用 Node.js、Java 及 Go(Golang);資料庫使用 Microsoft SQL Server、MySQL 及 PostgreSQL。熟悉即時功能(WebSockets / Socket.io)、角色權限控制、PDF 與報表產生,以及日常生產環境支援。我以 Claude Code 及 Cursor 作為 AI 輔助開發夥伴 —— 多 agent 工作流、自訂 skill 與 hook、AI 程式碼與安全審查,以及會自行驗證才提交的排程無人值守執行,並按 agent 與 skill 分工,令每個任務只帶入所需上下文,降低 Token 消耗與回應延遲 —— 在不降低質素的前提下更快交付。"
   },
   "experience": {
     "heading": "工作經驗",
@@ -143,9 +143,9 @@
       "languages": "語言"
     },
     "notes": {
-      "multiAgent": "AI 多 agent 協調",
-      "promptEngineering": "Prompt 與工作流設計(自訂 skills / hooks)",
-      "headlessAutomation": "Headless AI 任務自動化(排程 agent)",
+      "multiAgent": "AI 多 agent 協調(專職 agent 分工開發、測試、審查、安全;每次 code 改動都會過審查)",
+      "promptEngineering": "Prompt 與工作流設計(自訂 skill 按需載入;hooks 記錄改動路徑、擋破壞性指令)",
+      "headlessAutomation": "Headless AI 任務自動化(loop 與定時 schedule 執行,自行 typecheck / build 驗證,只 commit 不 push,留待人手覆核)",
       "monitoringLoops": "無人值守線上巡查(界定範圍、紀錄發現)",
       "contextManagement": "上下文管理(agent 與 skill 分工、按需載入,降低 Token 消耗與延遲)"
     }

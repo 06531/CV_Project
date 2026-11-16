@@ -157,7 +157,7 @@ export const SKILLS: SkillGroup[] = [
   },
   {
     id: 'ai',
-    items: ['AI Coding', 'Claude Code'],
+    items: ['AI Coding', 'Claude Code', 'Cursor'],
     notes: ['multiAgent', 'promptEngineering', 'headlessAutomation', 'monitoringLoops', 'contextManagement'],
   },
   {
