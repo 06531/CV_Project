@@ -79,6 +79,10 @@ export const EXPERIENCE: Role[] = [
           'Playwright',
         ],
       },
+      {
+        id: 'calories',
+        tech: ['Gemini API', 'Fastify', 'zod', 'TypeScript', 'React Native (Expo)', 'WebView'],
+      },
     ],
   },
   {
@@ -157,7 +161,7 @@ export const SKILLS: SkillGroup[] = [
   },
   {
     id: 'ai',
-    items: ['AI Coding', 'Claude Code', 'Cursor'],
+    items: ['AI Coding', 'Claude Code', 'Cursor', 'LLM APIs (Gemini, OpenAI)'],
     notes: ['multiAgent', 'promptEngineering', 'headlessAutomation', 'monitoringLoops', 'contextManagement'],
   },
   {

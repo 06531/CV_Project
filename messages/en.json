@@ -51,6 +51,16 @@
               "Designed the scheduling engine: a weekly recurrence rule generates an editable per-session table (move, skip or add single sessions), and a one-click \"renew term\" carries the settings into the next term.",
               "Hardened the API with per-IP rate limiting, security headers (helmet), fail-fast JWT configuration and user-enumeration protection; an AI-assisted security review found an account-impersonation vulnerability in company registration, which I fixed."
             ]
+          },
+          "calories": {
+            "name": "Calorie Lens — menu calorie estimator (personal project, in development)",
+            "description": "A mobile app that scans a restaurant's ordering QR code, reads the menu and shows estimated calories next to each dish, using the Gemini API.",
+            "bullets": [
+              "Built the Fastify + zod back end (menu estimate and menu-photo endpoints) with per-dish caching, rate limiting, a consistent response envelope and an AI provider interface with a Gemini adapter.",
+              "Designed the prompt pipeline: classify the menu into 10 cuisine types, each with its own prompt and calorie anchors, then estimate in parallel batches; menu photos are read with vision and cleaned up (promotions dropped, duplicates merged, size variants grouped).",
+              "Made the AI calls resilient: retry only on transient errors, 40 s timeout, automatic fallback model with a quota cool-down, and AI errors that never leak internals; 31 automated tests, plus 50+ real menu photos (Hong Kong, Taiwan, POS) run and written up.",
+              "Built the Expo (React Native) app: QR scanning, a WebView that injects JavaScript to extract the menu, calorie labels with confidence levels, and a daily intake log."
+            ]
           }
         }
       },
